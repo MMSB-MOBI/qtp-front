@@ -129,7 +129,7 @@ export namespace UniprotDatabase {
                     const cursor = event.target.result;            
                     if (cursor) {
                          const d = cursor.value as UniprotDatum;
-                         console.log(`Name for id ${cursor.key} is ${d.name}`);
+                         //console.log(`Name for id ${cursor.key} is ${d.name}`);
                          cursor.continue();
                          n++;
                     } else {
@@ -142,7 +142,8 @@ export namespace UniprotDatabase {
         });
     }
 
-    export const get = async (id: string) => {
+    export const get = async (id: string): Promise<any> => {
+        console.log("try to get"); 
         return new Promise(
             function(resolve, reject) {
               const dbRequest = indexedDB.open(dbName, V_NUM);
