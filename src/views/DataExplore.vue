@@ -6,7 +6,7 @@
     class="p-1 rounded bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50"
     @click="draw()"
     >PLOT IT</button>
-    <div v-if="selectable" class="overflow-y-scroll max-h-14 bg-gray-300">
+    <div v-if="selectable" class="overflow-y-scroll max-h-24 bg-gray-300">
       <div 
       v-for="column in availableData" 
       :key="column" 
@@ -15,8 +15,14 @@
       :class="{ active: isSelected(column) }"
       ></div>
     </div>
-    <div class="p-2">
-     <Volcano :data="plotData"/>
+    <div class="p-2 flex grid-cols-2 gap-2">
+     <Volcano 
+      :data="plotData" :transformy="transformation" 
+      @volcano-loaded-draw="displayButton = true"
+      @volcano-empty-draw="displayButton = false"/>
+     <button v-if="displayButton && transformation !== 'none'" class ="bg-purple-500 h-10 p-2" @click="transformation = 'none'" > Raw data </button>
+     <button v-if="displayButton && transformation !== '-log10'" class ="bg-purple-500 h-10 p-2" @click="transformation = '-log10'"> - Log10 transformation </button>
+     <button v-if="displayButton && transformation !== 'log10'" class ="bg-purple-500 h-10 p-2" @click="transformation = 'log10'"> Log10 transformation </button>
     <!-- <Volcano height=500 width=500/> -->
     </div>
 </template>
@@ -26,7 +32,7 @@ import { defineComponent, computed, ref, Ref, reactive } from 'vue';
 import { useStore, mapGetters } from 'vuex'
 //import Sliders from '@/components/Sliders.vue';
 import Volcano from '@/components/Volcano.vue';
-import { plotData  as plotDataType } from '../utilities/models/volcano';
+import { plotData  as plotDataType, transform} from '../utilities/models/volcano';
 import { toggle } from '../utilities/Arrays';
 export default defineComponent({
 
@@ -44,6 +50,9 @@ export default defineComponent({
       yLabel:''
     } as plotDataType);
 
+    const transformation = ref("none"); 
+    const displayButton = ref(false); 
+
     const selectable = computed( () => store.getters.getActiveSheet != null );
     const selected = ref(new Array<string>());
     const select = (field: string) => {
@@ -52,13 +61,13 @@ export default defineComponent({
         };
     const isSelected = (field: string) => selected.value.includes(field);
 
-    const availableData = computed( () => store.getters.currentSheetHeaders);
+    const availableData = computed( () => store.getters.getSelectedHeaders);
 
     const canDraw = computed(() => selected.value.length === 2);
     const draw = () => {
       if(canDraw.value) {
         console.log("lets draw");
-        console.log(canDraw.value);
+        //console.log(canDraw.value);
 
         plotData.x = store.getters.getColDataByName(selected.value[0], 'number');
         plotData.y = store.getters.getColDataByName(selected.value[1], 'number');    
@@ -67,7 +76,7 @@ export default defineComponent({
 
       }
     }
-    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData};
+    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, displayButton};
   }
 
 

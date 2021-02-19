@@ -9,8 +9,11 @@ type plotData = {
 interface Points {
     x: number;
     y: number;
-    d?: string|number|Object;
+    d?: string|number|Object|unknown;
 };
+
+//TO DO : Determine type d
+
 interface DatumPoints extends Points {
     datum: Record<string, string|number>
 }

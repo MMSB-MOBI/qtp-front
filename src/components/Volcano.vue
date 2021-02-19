@@ -61,27 +61,35 @@ export default defineComponent({
             default:500
         },
     },
-    setup(props){
+    setup(props, { emit }){
         const store = useStore()
-        const uniprotID = store.getters.getColDataByName("Accession");
-
+        const uniprotID = store.getters.getColDataByName("Accession", "string");
 
         const svgRoot: Ref<SVGSVGElement|null> = ref(null);
         // Getting props (reactive) references
         const { data, transformy } = toRefs(props)
 
-        const erase = () => d3.select(svgRoot.value).selectAll('*').remove();
+        const erase = () => {
+            emit('volcano-empty-draw')
+            d3.select(svgRoot.value).selectAll('*').remove();
+        }
+
+        //const triggerLoadedEvent = () => {console.log("triggerLoadedEvent"); emit('volcano-loaded-draw')}; 
  
-        const draw = (data: t.plotData, yTransform: t.transform=transformy.value) => {
+        const draw = async (data: t.plotData, yTransform: t.transform=transformy.value) => {
             console.log("Drawing&Erasing");
             erase();
-            const pointList: t.Points[] = data.x.map((e, i) => ({
+
+            const pointList: t.Points[] = await Promise.all( data.x.map(async (e, i) => ({
                 x:e, 
                 y: yTransform == '-log10' ? (-1)*Math.log10(data.y[i])
                                           : yTransform == 'log10'  ? Math.log10(data.y[i])
                                           : data.y[i], // aka 'none'
-                d: UniprotDatabase.get( uniprotID[i] )
-                }) );
+                d: await UniprotDatabase.get(uniprotID[i])
+                }) ));
+
+            console.log("after pointList"); 
+            console.log(pointList); 
             console.log("Creating ActiveLayers");
             const layerUI = new ActiveLayers(svgRoot.value as SVGSVGElement);
 
@@ -116,6 +124,8 @@ export default defineComponent({
             axis.onActiveBackgroundClick( (x, y)=> layerUI.toggle(sliderUI, x, y) );
             sliderUI.onSlide(() => layerUI.resize(sliderUI) );
 
+            emit('volcano-loaded-draw'); 
+
         /* Trying zooming stuff  TO BE CONTINUED 
             https://observablehq.com/@d3/zoomable-scatterplot
             http://bl.ocks.org/stepheneb/1182434
@@ -147,15 +157,16 @@ export default defineComponent({
         */
         /* ---------------- */
         };
-        watch( (props.data), (newData, oldData) =>{
+        watch( (props.data), async (newData, oldData) =>{
             console.log("Data changed from");
-            console.dir(oldData);
+            //console.dir(oldData);
             console.log("to");
-            console.dir(newData);
-            draw(newData, transformy.value);
-            setTimeout(()=>{ console.log("Changing transform");
+            //console.dir(newData);
+            await draw(newData, transformy.value);
+            console.log("END DRAW"); 
+            /*setTimeout(()=>{ console.log("Changing transform");
                               draw(newData, "-log10");}
-                            , 2500);
+                            , 7000);*/
         });
         watch( (transformy), (newTransform, oldTransform) =>{
             console.log("transform changed from");
@@ -165,12 +176,13 @@ export default defineComponent({
             draw(data.value, newTransform);
         });
         onMounted(() => {
+            console.log("onMounted")
         // the DOM element will be assigned to the ref after initial render
         //console.log(svgRoot.value) // <div>This is a root element</div>
-        d3.select(svgRoot.value)
-        .attr("height", props.height)
-        .attr("width", props.width)
-        .attr("class", "volcano-svg-component");
+            d3.select(svgRoot.value)
+            .attr("height", props.height)
+            .attr("width", props.width)
+            .attr("class", "volcano-svg-component");
       });
 
       return {
