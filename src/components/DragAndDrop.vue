@@ -2,7 +2,7 @@
  See tricks : https://learnvue.co/2020/01/how-to-add-drag-and-drop-to-your-vuejs-project/
 */
 <template>
-    <div class="w-full rounded border-dashed bg-gray-300 h-6"
+    <div class="w-auto rounded bg-gray-300 m-2 mb-3 p-2 h-full text-lg font-bold border-2 border-black border-opacity-100"
     @drop="handleDrop"
     @click="coucou"
     @dragover.prevent

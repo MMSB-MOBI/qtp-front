@@ -8,6 +8,7 @@ export interface WorkBookStore {
   activeSheet: null|string;
   dimensions: [number,number];
   array: Array<Array<any>>;
+  selectedCol: number[];
 }
 
 const parseRange = (refs: string)=>{
@@ -21,7 +22,8 @@ export default createStore({
     workBook: null,
     activeSheet:null,
     dimensions:[0, 0],
-    array: [[]]
+    array: [[]],
+    selectedCol : []
   } as WorkBookStore,
   getters : {
     test(state): string {
@@ -73,6 +75,16 @@ export default createStore({
       }
       return _;
     },
+
+    getSelectedHeaders(state, getters):  string[]{
+      const _: string[] = []
+      const nCol = getters.dimensions[1]; 
+      for (let c=0; c < nCol ; c++) {
+        if (state.selectedCol.includes(c)) _.push(getters.cell(0,c))
+      }
+      return _
+    },
+
     getColDataByName(state, getters): (colName: string, type: string) => number|any[]|undefined { // We should index column by first element eg : { "colName":[ COL_DATA ]}
       const [nRow, nCol] = getters.dimensions;
       return (colName: string, type="number") => {
@@ -90,7 +102,7 @@ export default createStore({
         }
         return undefined;
       };
-  }
+  },
   },
   mutations: {
     workBook(state, workBook: XLSX.WorkBook): void {
@@ -106,7 +118,13 @@ export default createStore({
     pushUp (state): void {
       // mutate state
       state.count++
-    }
+    },
+    addToSelection(state, colNum: number): void {
+      const index = state.selectedCol.indexOf(colNum)
+      if (index === -1) state.selectedCol.push(colNum)
+      else state.selectedCol.splice(index, 1)
+    },
+    
   },
   actions: {
     initStoreBook(context, workBook): void {
@@ -115,6 +133,14 @@ export default createStore({
       const _ = context.getters.asArray;
       context.commit('dimensions', _ ? [_.length, _[0].length] : [0,0] );
       context.commit('array', _ ? _ : [[]]);
+    },
+    selectColByKeyword(context, keyword: string): void {
+      const nCol = context.state.dimensions[1]
+      for (let j = 0; j < nCol; j++){
+        if (context.getters.cell(0,j).includes(keyword)){
+          context.commit('addToSelection', j); 
+        }
+      }
     }
   },
   modules: {
