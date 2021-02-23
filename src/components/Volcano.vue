@@ -20,7 +20,7 @@ class VolcanoData {
 } 
 */
 
-import { defineComponent, PropType, ref, onMounted, computed, Ref, watch, toRefs } from 'vue';
+import { defineComponent, PropType, ref, onMounted, computed, Ref, watch, toRefs, onUnmounted } from 'vue';
     
 import * as d3 from "d3";
 
@@ -137,14 +137,17 @@ export default defineComponent({
    
             // Adding/Resizing Layers Logic
             axis.onActiveBackgroundClick( (x, y)=> {
-                
                 const selectCoords = layerUI.toggle(sliderUI, x, y);
                 console.log("select", selectCoords); 
-                store.commit("proteinSelection/filterPoints", {coords: selectCoords, xScale : axis.xScale, yScale : axis.yScale})
-                console.log("filter", store.state.proteinSelection.filterPoints.length)
-                //filterPoints(selectCoords, axis.xScale, axis.yScale); 
+                store.commit("proteinSelection/addFilterPoints", {coords: selectCoords, xScale : axis.xScale, yScale : axis.yScale})
             
             } );
+
+            layerUI.onSelectedLayerClick((x,y) => {
+                console.log("CLICK SELECTED LAYER"); 
+                const unselectCoords = layerUI.getClickRectCoords(sliderUI, x,y); 
+                store.commit("proteinSelection/removeFilterPoints", {coords: unselectCoords, xScale : axis.xScale, yScale : axis.yScale})
+            })
 
             sliderUI.onSlide(() => layerUI.resize(sliderUI) );
 
@@ -207,7 +210,10 @@ export default defineComponent({
             .attr("height", props.height)
             .attr("width", props.width)
             .attr("class", "volcano-svg-component");
-      });
+        });
+        onUnmounted(() => {
+            store.commit('proteinSelection/clearFilterPoints')
+        })
 
       return {
         svgRoot

@@ -9,10 +9,23 @@ type plotData = {
 interface Points {
     x: number;
     y: number;
-    d?: string|number|Object|unknown;
+    d?: PointData;
 };
 
-//TO DO : Determine type d
+interface GOData{
+    evidence: string; 
+    id: string; 
+    term: string; 
+}
+
+interface PointData{
+    fullName: string; 
+    geneName: string;
+    id: string;
+    name: string; 
+    GO: GOData[]; 
+
+}
 
 interface DatumPoints extends Points {
     datum: Record<string, string|number>

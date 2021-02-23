@@ -27,8 +27,15 @@ export const proteinSelection = {
       state.allPoints = pointList; 
     }, 
 
-    filterPoints(state: ProteinSelection, opts: FilterOptions){ 
-      state.filterPoints = state.allPoints.filter(point => opts.xScale(point.x) > opts.coords.x1 && opts.xScale(point.x) <= opts.coords.x2 && opts.yScale(point.y) > opts.coords.y1 && opts.yScale(point.y) <= opts.coords.y2)
-    }
+    addFilterPoints(state: ProteinSelection, opts: FilterOptions){ 
+      state.filterPoints = state.filterPoints.concat(state.allPoints.filter(point => opts.xScale(point.x) > opts.coords.x1 && opts.xScale(point.x) <= opts.coords.x2 && opts.yScale(point.y) > opts.coords.y1 && opts.yScale(point.y) <= opts.coords.y2));
+    },
+    removeFilterPoints(state: ProteinSelection, opts: FilterOptions){
+      const toDelId: t.Points[] = state.allPoints.filter(point => opts.xScale(point.x) > opts.coords.x1 && opts.xScale(point.x) <= opts.coords.x2 && opts.yScale(point.y) > opts.coords.y1 && opts.yScale(point.y) <= opts.coords.y2)
+      state.filterPoints = state.filterPoints.filter(point => !toDelId.includes(point))
+    },
+    clearFilterPoints(state: ProteinSelection){
+      state.filterPoints = []; 
   },
+  }
 }

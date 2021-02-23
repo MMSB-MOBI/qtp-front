@@ -7,6 +7,7 @@ import { axisRight } from "d3";
 import { defineAsyncComponent, registerRuntimeCompiler } from "vue";
 
 type RectSel = d3.Selection<SVGRectElement, number, SVGGElement, unknown>
+
 interface SelectionCoords{
     x1: number;
     x2: number;
@@ -19,10 +20,21 @@ export default class ActiveLayers {
     activeArea?: ActiveCorners;
     recPool: RectSel;
     selectionCoords: number[]; 
+
+    private selectedLayerCallback?: (x: number, y: number) => void;
+    public onSelectedLayerClick(fn: (x: number, y: number) => void) {
+        this.selectedLayerCallback = fn;
+    }
+
+    uncolorRect(){
+        this.recPool.filter((d,i) => i === 1)
+    }
+
     constructor(svg: SVGSVGElement) {
         console.log("ActiveLayers constructor")
         this.svg = svg;
         this.selectionCoords = []; 
+
         //console.log(svg);
         //console.dir(d3.select(this.svg));
         this.recPool = d3.select(this.svg).append('g')
@@ -37,11 +49,12 @@ export default class ActiveLayers {
         .attr('height', 50)
         .attr('fill', 'khaki')
         .attr('visibility', 'hidden')
-        .on('click', function(e){
-            d3.select(this).attr('visibility', 'hidden');
+        .on('click', (e,i) => {
+            const currentRect = this.recPool.filter((d,idx) => idx === i - 1)
+            currentRect.attr('visibility', 'hidden');
             e.stopPropagation();
-            console.log("Click on rect");
-        });
+            if(this.selectedLayerCallback) this.selectedLayerCallback(e.layerX, e.layerY); 
+        })
     }
     getAvailableRec(): RectSel{
         let found = false;
@@ -124,52 +137,20 @@ export default class ActiveLayers {
             }
         });
     }
-    toggle(sliderUI: Sliders, x: number, y: number) {
-        // // console.log("🚀 ~ file: ActiveLayers.ts ~ line 119 ~ toggle ~ sliderUI", sliderUI)
-        console.log("click layer"); 
-        console.log("click", x,y)
-        
+
+    getClickRectCoords(sliderUI: Sliders ,x: number, y: number){
         if(! this.activeArea)
         throw('Missing a plot corners to resize active layer');
-        const frame: ActiveCorners = this.activeArea;
-        // // console.log("🚀 ~ file: ActiveLayers.ts ~ line 123 ~ toggle ~ frame", frame)
         const xLimSl = sliderUI.xLimits;
-        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 128 ~ toggle ~ xLimSl", xLimSl)
         const yLimSl = sliderUI.yLimits;
-        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 130 ~ toggle ~ yLimSl", yLimSl)
-        
-        //console.log("DRAWING LOGIC");
-        //console.log(x,y);
-    
-        // Upper-left, bottom-right corners of data projection area
-        /*
-        let x1 = axis.marginLeft,
-            x2 = Number.parseInt( d3.select(this.svg).attr('width') ) - axis.marginRight,
-            y1 = axis.marginTop,
-            y2 = Number.parseInt( d3.select(this.svg).attr('height') ) - axis.marginBot;
-        */
-
-        // browse xlim and find smaller than negative -> x0
-        //                              positive ->
-        
-        let {x1, y1, x2, y2} = frame;
-        console.log(`Starting ${x1},${y1}:${x2},${y2}`) 
-        //console.log(`Ping at ${x} ${y}`);
-        //console.log(typeof(x));
-        //console.log(sliderUI.xLimits);
-        //console.log(sliderUI.yLimits);
-        
+        let {x1, y1, x2, y2}: ActiveCorners = this.activeArea;
         const xLeft = Math.min(...xLimSl)
-        // // console.log("🚀 ~ file: ActiveLayers.ts ~ line 151 ~ toggle ~ xLeft", xLeft)
         const xRight = Math.max(...xLimSl)
-        // // console.log("🚀 ~ file: ActiveLayers.ts ~ line 153 ~ toggle ~ xRight", xRight)
-        //const xSolo = xLimSl.length == 1;
         const yLim = yLimSl[0];
+
         if (y >= yLim) {
-            //console.log(`Shifting borne inf ${y} >= ${yLim}`);
             y1 = yLim;
         } else if (y < yLim) {
-            //console.log("Shifting borne sup")
             y2 = yLim;
         } 
 
@@ -178,27 +159,24 @@ export default class ActiveLayers {
         } else if (x < xLeft) {
             x2 = xLeft
         } else { // We got between 2 sliders
-            //console.log("Btwn sliders");
             x1 = xLeft;
             x2 = xRight;
         }
 
-        //console.log(`Painting ${x1},${y1}:${x2},${y2}`);
-        const xRec = x1;
-        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 176 ~ toggle ~ xRec", xRec)
-        const yRec = y1;
-        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 178 ~ toggle ~ yRec", yRec)
-        const width = x2 - x1;
-        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 180 ~ toggle ~ width", width)
-        const height = y2 - y1;
-        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 182 ~ toggle ~ height", height)
+        return {x1, x2, y1, y2}
 
-        console.log(x1, y1)
-        console.log(x2, y2)
+    }
+
+    toggle(sliderUI: Sliders, x: number, y: number) {
+        
+        const {x1, x2, y1, y2} = this.getClickRectCoords(sliderUI, x, y); 
+
+        const width = x2 - x1;
+        const height = y2 - y1;
 
         const newRect = this.getAvailableRec();
-        newRect.attr('x', xRec)
-        .attr('y', yRec)
+        newRect.attr('x', x1)
+        .attr('y', y1)
         .attr('x2', x2)
         .attr('y2', y2)
         .attr('width', width)
