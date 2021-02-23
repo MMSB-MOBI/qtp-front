@@ -11,6 +11,11 @@ export interface WorkBookStore {
   selectedCol: number[];
 }
 
+export interface SelectionOptions {
+  colNum: number; 
+  remove: boolean; 
+}
+
 const parseRange = (refs: string)=>{
   const [rowRange, colRange] = refs.split(':');
 
@@ -119,26 +124,26 @@ export default createStore({
       // mutate state
       state.count++
     },
-    addToSelection(state, colNum: number): void {
-      const index = state.selectedCol.indexOf(colNum)
-      if (index === -1) state.selectedCol.push(colNum)
-      else state.selectedCol.splice(index, 1)
+    addToSelection(state, addToSelectionOptions: SelectionOptions): void {
+      const index = state.selectedCol.indexOf(addToSelectionOptions.colNum)
+      if (index === -1) state.selectedCol.push(addToSelectionOptions.colNum)
+      else if(addToSelectionOptions.remove) state.selectedCol.splice(index, 1)
     },
     
   },
   actions: {
     initStoreBook(context, workBook): void {
-      console.log("Creating Workbook store");
       context.commit('workBook', workBook);
       const _ = context.getters.asArray;
       context.commit('dimensions', _ ? [_.length, _[0].length] : [0,0] );
       context.commit('array', _ ? _ : [[]]);
     },
     selectColByKeyword(context, keyword: string): void {
+      console.log("selectColByKeyword"); 
       const nCol = context.state.dimensions[1]
       for (let j = 0; j < nCol; j++){
         if (context.getters.cell(0,j).includes(keyword)){
-          context.commit('addToSelection', j); 
+          context.commit('addToSelection', {colNum : j, remove : false}); 
         }
       }
     }

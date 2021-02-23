@@ -21,14 +21,24 @@
                 >
                     {{sTitle}}
                 </div>
-                <div>
+                <p> {{dimensions[0] - 1}} proteins</p>
+                <p>
                     {{selectedCol.length}} selected columns for data exploration {{defaultColSelectionStr}}
-                </div>
+                </p>
             </div>
         </div>
 
         <table class="w-auto">
             <thead>
+                <tr> 
+                    <th 
+                    v-for="m in dimensions[1]" 
+                    :key="m" 
+                    class="checkbox"
+                    :style="{ 'background-color': selectedCol.includes(m - 1) ? 'thistle' : ''}"> 
+                        <input type="checkbox" @click="addToSelection(m - 1)" :checked="selectedCol.includes(m-1)" /> 
+                    </th>
+                </tr>
                 <tr>
                     <th 
                     class="relative p-2 cell" 
@@ -36,8 +46,6 @@
                     :key="m" 
                     :style="{ 'background-color': selectedCol.includes(m - 1) ? 'thistle' : ''}"
                     > 
-                        <div class="col-clickable-div"
-                        @click="addToSelection(m - 1)"></div>
                         <div class="cell-content-div"
                         :style="{width: savedWidths[m-1] + 'px'}"
                         >
@@ -64,9 +72,6 @@
                     :key="m"
                     :style="{ 'background-color': selectedCol.includes(m - 1) ? 'thistle' : ''}"
                     >
-                        <div class="col-clickable-div"
-                        @click="addToSelection(m)"
-                        />
                         <div class="cell-content-div"
                             >
                             <p 
@@ -169,7 +174,7 @@ export default defineComponent({
         }
 
         const addToSelection = (colNum: number) => {
-            store.commit('addToSelection', colNum); 
+            store.commit('addToSelection', {colNum, remove : true}); 
             defaultColSelectionStr.value = '(manual selection)'; 
         }
 
