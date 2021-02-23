@@ -1,6 +1,7 @@
 import { map } from 'd3';
 import { createStore } from 'vuex'
 import * as XLSX from 'xlsx';
+import {proteinSelection} from './modules/proteinSelection'
 
 export interface WorkBookStore {
   count: number;
@@ -95,8 +96,8 @@ export default createStore({
                      Number.parseFloat(getters.cell(i+1, j)) :
                      getters.cell(i+1, j);
             });
-           // console.log(`Vector ${colName}`);
-           // console.log(w);
+           // //console.log(`Vector ${colName}`);
+           // //console.log(w);
             return w;
           }
         }
@@ -128,7 +129,7 @@ export default createStore({
   },
   actions: {
     initStoreBook(context, workBook): void {
-      console.log("Creating Workbook store");
+      //console.log("Creating Workbook store");
       context.commit('workBook', workBook);
       const _ = context.getters.asArray;
       context.commit('dimensions', _ ? [_.length, _[0].length] : [0,0] );
@@ -144,6 +145,7 @@ export default createStore({
     }
   },
   modules: {
+    proteinSelection
   }
 })
 

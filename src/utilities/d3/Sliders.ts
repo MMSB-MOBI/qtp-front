@@ -23,7 +23,7 @@ export class Sliders {
     public get xLimits(): number[] {
         return this.specsBot.handlers.map((g)=>{
             const _ = g.attr('transform');
-            //console.log(`xAxis G ${_}`);
+            ////console.log(`xAxis G ${_}`);
             const t = trCoordinates(g);
             return t[0];
         });
@@ -31,7 +31,7 @@ export class Sliders {
     public get yLimits(): number[] {
         return this.specsRight.handlers.map((g)=>{
             const _ = g.attr('transform');
-            //console.log(`yAxis G ${_}`);            
+            ////console.log(`yAxis G ${_}`);            
             const t = trCoordinates(g);
             return t[1];
         });
@@ -92,7 +92,7 @@ export class Sliders {
                 .attr('visibility', 'hidden');
             const D = d3.drag()
                 .on("start", (event, d) => {
-                    console.log(event);
+                    //console.log(event);
                     gSlider.attr('stroke-width', 4).attr("stroke", "lime");
                     gGhost.attr('visibility', 'visible');
                     event.sourceEvent.stopPropagation();
@@ -122,7 +122,7 @@ export class Sliders {
                         else if(newCoor < frame.x1)
                             newCoor = frame.x1;
                     } else { 
-                        console.log(`Drag pourt ${newCoor} ${frame.y1} ${frame.y2}`);
+                        //console.log(`Drag pourt ${newCoor} ${frame.y1} ${frame.y2}`);
                         if(newCoor > frame.y2) 
                             newCoor = frame.y2;
                         else if(newCoor < frame.y1)
@@ -158,7 +158,7 @@ export class Sliders {
             sliders.handlers.push(gSlider);
             sliders.ghosts.push(gGhost);
         }
-        console.dir(sliders);
+        //console.dir(sliders);
         return sliders;
     }
     

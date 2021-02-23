@@ -97,6 +97,7 @@ import { UniprotDatabase } from '../utilities/uniprot-database';
 export default defineComponent({
     components : { DragAndDrop },
     setup(){
+        console.log("OOOO")
         //For resizable tab
         const curCol = ref(0)
         const pageX = ref(0); 
@@ -113,12 +114,12 @@ export default defineComponent({
         
 
         const doIt = (dropData: any) => {
-            //console.log("Tryin to read ...");
+            //////console.log("Tryin to read ...");
             const workbook = XLSX.read(dropData, {type: 'array'});
-            
-            //console.dir(workbook)
+            console.log(typeof(workbook)); 
+            ////console.dir(workbook)
             store.dispatch('initStoreBook', workbook);
-            //console.log(workbook.SheetNames);
+            //////console.log(workbook.SheetNames);
             /*const _ = workbook.SheetNames[0];
             const sheet = workbook.Sheets[_];*/            
             loaded.value = true;             
@@ -129,7 +130,7 @@ export default defineComponent({
 
         //const active = computed(() => store.state.count);
         const headers = computed( () => {
-            console.log("HEADERS", store.getters.sheetNames); 
+            ////console.log("HEADERS", store.getters.sheetNames); 
             return  store.getters.sheetNames;
         });
         const dimensions: any = computed( () => {
@@ -176,33 +177,36 @@ export default defineComponent({
 
 
         onMounted(()=>{
-            console.log("mounted xmlLoader"); 
+            ////console.log("mounted xmlLoader"); 
             window.addEventListener('mousemove', resizeOnMouseMove)
             window.addEventListener('mouseup', resizeOnMouseUp)
 
 
             setTimeout(async() => {
-                console.log("trying to fecth")
+                //////console.log("trying to fecth")
+
+                
                 const arrayData = await fetch(
                     'xls/TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins_test.ods'
                     )//'../TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins.xlsx')//fetch("../TMT-donées brutes_dev.xlsx")
                     .then( (response) =>{
-                        console.log(response.status);
-                        console.log("success");
+                        //////console.log(response.status);
+                        //////console.log("success");
                     return response.arrayBuffer();
                     })
                     .catch(()=>console.error("No XLS found"));
                 if(arrayData) {
-                    console.log("OUOUH");
-                    console.log(arrayData); 
+                    //////console.log("OUOUH");
+                    //////console.log(arrayData); 
                     const data = new Uint8Array(arrayData);
                     const wb = XLSX.read(data, {type:"array"});
+                    console.log("TYPE", typeof(wb)); 
                     store.dispatch('initStoreBook', wb);
                     store.dispatch('selectColByKeyword', 'Abundance Ratio'); 
                     loaded.value = true;
                     const uniprotIdList: string[]|undefined = store.getters.getColDataByName("Accession", "string");
                     if (uniprotIdList) {
-                        console.log(`Trying to load ${uniprotIdList.length} elements`);
+                        ////console.log(`Trying to load ${uniprotIdList.length} elements`);
                         try{
                             const n = await UniprotDatabase.add(uniprotIdList);
                             console.log(`${n} additions OK`);
@@ -213,9 +217,9 @@ export default defineComponent({
                         }                       
                         await UniprotDatabase.readAll();
                         const d = await UniprotDatabase.get("P00961");
-                        console.dir(d);
+                        //console.dir(d);
                     }
-                    //console.log(store.getters.json);
+                    //////console.log(store.getters.json);
                 }
             }
             , 1000);

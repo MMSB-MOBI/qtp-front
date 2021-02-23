@@ -20,7 +20,7 @@ export default defineComponent({
   //  HelloWorld,
   },
   mounted(){
-    console.log("Mounting spreadsheet");
+    //console.log("Mounting spreadsheet");
   }
 });
 </script>

@@ -28,8 +28,8 @@ export default class VolcanoPlot {
     }
     draw(data: Points[]) {
         if(this.container) {
-            console.log("OTHOT");
-            //console.dir(this.container);
+            //console.log("OTHOT");
+            ////console.dir(this.container);
         }   
         const container = this.container 
                         ? this.container
@@ -51,7 +51,7 @@ export default class VolcanoPlot {
                 /*.attr('class', circleClass)*/
                 .on('mouseenter', (e,d) => console.log(d))
                 .on('click', (e, d) => { e.stopPropagation();  })
-                //.each((d)=>console.log("pouet"))
+                //.each((d)=>//console.log("pouet"))
                 ;
     }
 }

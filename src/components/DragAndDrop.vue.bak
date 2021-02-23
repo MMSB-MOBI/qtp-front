@@ -38,8 +38,8 @@ export default defineComponent({
                     const data = new Uint8Array(results);                  
                     const workbook = XLSX.read(data, {type: 'array'});                    
                     /* DO SOMETHING WITH workbook HERE */
-                    console.log("WBOOK");
-                    console.log(workbook);
+                    //console.log("WBOOK");
+                    //console.log(workbook);
                 }
             };   
             const reader = new FileReader();
@@ -55,13 +55,13 @@ export default defineComponent({
         */
         },
         handleDrop(e: DragEvent) {
-            console.log("DROP!!");
+            //console.log("DROP!!");
             e.stopPropagation(); e.preventDefault();
             if(e.dataTransfer) 
                 this.processData(e.dataTransfer)
         },
         coucou(){
-            console.log("Coucou");
+            //console.log("Coucou");
         }
     }
     /*

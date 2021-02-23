@@ -46,7 +46,8 @@ export namespace UniprotDatabase {
     }
 
     const fetchFrom = async (uniprotIDs: string[]): Promise<UniprotFetch> => {
-        console.log(`ff Loading ${uniprotIDs.length} items ff`);
+        //console.log(`ff Loading ${uniprotIDs.length} items ff`);
+        //console.log(providerURL); 
         const response = await fetch(`${providerURL ? providerURL : ''}/api/uniprot/many`, {
             method: 'POST',
             headers: {
@@ -64,10 +65,10 @@ export namespace UniprotDatabase {
     }
     
     export const add = async (uniprotIDs: string[]) => {
-        console.log("ADD CALL");
+        //console.log("ADD CALL");
         const uniprotData: UniprotFetch = await fetchFrom(uniprotIDs);
-        //console.log(`Fetched this`);
-        //console.dir(uniprotData);
+        ////console.log(`Fetched this`);
+        ////console.dir(uniprotData);
         return new Promise((res, rej) => {
             DBOpenRequest = indexedDB.open(dbName, V_NUM);
             DBOpenRequest.onerror = (event) => {
@@ -83,8 +84,8 @@ export namespace UniprotDatabase {
                 const objectStore   = transaction.objectStore("uniprotEntity");
                 let cnt = 0;
                 Object.keys(uniprotData).forEach( (uniprotID: string) => {
-                    //console.log(uniprotID);
-                    //console.dir(uniprotData);
+                    ////console.log(uniprotID);
+                    ////console.dir(uniprotData);
                     const uniprotDatum = uniprotData[uniprotID];
                     if(uniprotDatum == null){
                         console.error(`${uniprotID} was fetched as null`);
@@ -105,7 +106,7 @@ export namespace UniprotDatabase {
         });
     }
     export const readAll = async () => {
-        console.log("Trying to read");
+        //console.log("Trying to read");
         return new Promise((res, rej) => {
             const dbRequest = indexedDB.open(dbName, V_NUM);
             dbRequest.onerror = (event) => {
@@ -129,7 +130,7 @@ export namespace UniprotDatabase {
                     const cursor = event.target.result;            
                     if (cursor) {
                          const d = cursor.value as UniprotDatum;
-                         //console.log(`Name for id ${cursor.key} is ${d.name}`);
+                         ////console.log(`Name for id ${cursor.key} is ${d.name}`);
                          cursor.continue();
                          n++;
                     } else {
@@ -143,7 +144,7 @@ export namespace UniprotDatabase {
     }
 
     export const get = async (id: string): Promise<any> => {
-        console.log("try to get"); 
+        //console.log("try to get"); 
         return new Promise(
             function(resolve, reject) {
               const dbRequest = indexedDB.open(dbName, V_NUM);

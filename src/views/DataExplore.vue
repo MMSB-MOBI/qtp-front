@@ -15,15 +15,20 @@
       :class="{ active: isSelected(column) }"
       ></div>
     </div>
-    <div class="p-2 flex grid-cols-2 gap-2">
-     <Volcano 
-      :data="plotData" :transformy="transformation" 
-      @volcano-loaded-draw="displayButton = true"
-      @volcano-empty-draw="displayButton = false"/>
-     <button v-if="displayButton && transformation !== 'none'" class ="bg-purple-500 h-10 p-2" @click="transformation = 'none'" > Raw data </button>
-     <button v-if="displayButton && transformation !== '-log10'" class ="bg-purple-500 h-10 p-2" @click="transformation = '-log10'"> - Log10 transformation </button>
-     <button v-if="displayButton && transformation !== 'log10'" class ="bg-purple-500 h-10 p-2" @click="transformation = 'log10'"> Log10 transformation </button>
+    <div>
+      <div class="flex p-2 gap-2">
+        <button v-if="displayButton && transformation !== 'none'" class ="bg-purple-500 h-10 p-2" @click="transformation = 'none'" > Raw data </button>
+        <button v-if="displayButton && transformation !== '-log10'" class ="bg-purple-500 h-10 p-2" @click="transformation = '-log10'"> - Log10 transformation </button>
+        <button v-if="displayButton && transformation !== 'log10'" class ="bg-purple-500 h-10 p-2" @click="transformation = 'log10'"> Log10 transformation </button>
+      </div>
+    <div class="flex gap-10">
+      <Volcano 
+        :data="plotData" :transformy="transformation" 
+        @volcano-loaded-draw="displayButton = true"
+        @volcano-empty-draw="displayButton = false"/>
+      <ProteinsList/>
     <!-- <Volcano height=500 width=500/> -->
+    </div>
     </div>
 </template>
 
@@ -32,12 +37,13 @@ import { defineComponent, computed, ref, Ref, reactive } from 'vue';
 import { useStore, mapGetters } from 'vuex'
 //import Sliders from '@/components/Sliders.vue';
 import Volcano from '@/components/Volcano.vue';
+import ProteinsList from '@/components/ProteinsList.vue';
 import { plotData  as plotDataType, transform} from '../utilities/models/volcano';
 import { toggle } from '../utilities/Arrays';
 export default defineComponent({
 
 
-  components: { /*Sliders,*/ Volcano },
+  components: { /*Sliders,*/ Volcano, ProteinsList },
 
   setup() {
     const store = useStore();
@@ -66,8 +72,8 @@ export default defineComponent({
     const canDraw = computed(() => selected.value.length === 2);
     const draw = () => {
       if(canDraw.value) {
-        console.log("lets draw");
-        //console.log(canDraw.value);
+        //console.log("lets draw");
+        ////console.log(canDraw.value);
 
         plotData.x = store.getters.getColDataByName(selected.value[0], 'number');
         plotData.y = store.getters.getColDataByName(selected.value[1], 'number');    

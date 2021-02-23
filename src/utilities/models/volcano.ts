@@ -20,5 +20,12 @@ interface DatumPoints extends Points {
 
 type transform = "log10" | "-log10" | "none";
 
+export interface Selection{
+    x1:number;
+    x2:number; 
+    y1:number;
+    y2:number; 
+}; 
 
-export{ Points, plotData, transform };
+
+export{ Points, plotData, transform};

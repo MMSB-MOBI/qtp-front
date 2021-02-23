@@ -185,7 +185,9 @@ export class Axis implements PlotFrame{
             .style('text-anchor', 'middle')
             .html(this.optYtransform ? `${this.optYtransform}[ ${yLabel} ]` : yLabel);
 
-    
+        /*const test = d3.select(this.svg).append('g').attr('class', 'test')
+        test.append('circle').attr('fill', 'red').attr('r',10).attr('cx', this.xScale(470)).attr('cy', this.yScale(227))
+        test.append('circle').attr('fill', 'red').attr('r',10).attr('cx', this.xScale(375)).attr('cy', this.yScale(227))*/
 
         /*
             Set Margins to account for labels occupancy -- TO DO --
@@ -240,7 +242,7 @@ export class Axis implements PlotFrame{
         const a = yText.node();
         if(a != null) {
             yLabelPos = this.height / 2;
-            console.log(frame.y1, frame.y2, a.getBoundingClientRect().width);
+            //console.log(frame.y1, frame.y2, a.getBoundingClientRect().width);
         }
         gYlabel.attr('transform', `translate(${this.marginLeft.marginOuter}, ${yLabelPos}) rotate(-90)`)
         
@@ -268,7 +270,7 @@ export class Axis implements PlotFrame{
        
         d3.select(this.svg).on('click',
             (e) => {
-                console.log("CLCIK CTRL" + this );
+                //console.log("CLCIK CTRL" + this );
                 if( e.layerX > frame.x1 && 
                     e.layerX < frame.x2 &&
                     e.layerY > frame.y1 && 
@@ -290,9 +292,9 @@ export class Axis implements PlotFrame{
 
         const [min, max] = d3.extent(data, (d)=>d.x);
 
-        console.log(`Setting xScale ${min}:${max} -> ${frame.x1}:${frame.x2}`);
-        console.dir(this.marginLeft);
-        console.dir(frame);
+        //console.log(`Setting xScale ${min}:${max} -> ${frame.x1}:${frame.x2}`);
+        //console.dir(this.marginLeft);
+        //console.dir(frame);
         if(min != undefined && max != undefined)
             this.xScale.range([frame.x1, frame.x2])
                 .domain([min, max])
@@ -310,8 +312,8 @@ export class Axis implements PlotFrame{
         else
             console.error("Undefined value in y Range");
 
-        console.log("###setScale");
-        console.log(this.xScale);
-        console.log(this.yScale);
+        //console.log("###setScale");
+        //console.log(this.xScale);
+        //console.log(this.yScale);
     }
 }

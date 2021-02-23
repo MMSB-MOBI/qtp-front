@@ -62,7 +62,9 @@ export default defineComponent({
         },
     },
     setup(props, { emit }){
-        const store = useStore()
+        const store = useStore(); 
+        //const allPoints: Ref<t.Points[]> = ref([]); 
+        //const filteredPoints: Ref<t.Points[]> = ref([]); 
         const uniprotID = store.getters.getColDataByName("Accession", "string");
 
         const svgRoot: Ref<SVGSVGElement|null> = ref(null);
@@ -73,55 +75,77 @@ export default defineComponent({
             emit('volcano-empty-draw')
             d3.select(svgRoot.value).selectAll('*').remove();
         }
+        /*
+        const filterPoints = (coords: t.Selection, xScale: d3.ScaleLinear<number, number>, yScale: d3.ScaleLinear<number, number>) => {
+            console.log("filterPoints"); 
+            filteredPoints.value = allPoints.value.filter(point => xScale(point.x) > coords.x1 && xScale(point.x) <= coords.x2 && yScale(point.y) > coords.y1 && yScale(point.y) <= coords.y2)
+            console.log(filteredPoints.value); 
 
-        //const triggerLoadedEvent = () => {console.log("triggerLoadedEvent"); emit('volcano-loaded-draw')}; 
+        }*/
+
+        //const triggerLoadedEvent = () => {//console.log("triggerLoadedEvent"); emit('volcano-loaded-draw')}; 
  
         const draw = async (data: t.plotData, yTransform: t.transform=transformy.value) => {
             console.log("Drawing&Erasing");
             erase();
 
-            const pointList: t.Points[] = await Promise.all( data.x.map(async (e, i) => ({
+            const pointList = await Promise.all( data.x.map(async (e, i) => ({
                 x:e, 
                 y: yTransform == '-log10' ? (-1)*Math.log10(data.y[i])
                                           : yTransform == 'log10'  ? Math.log10(data.y[i])
                                           : data.y[i], // aka 'none'
                 d: await UniprotDatabase.get(uniprotID[i])
                 }) ));
+            console.log("00000", store.state.proteinSelection.allPoints.length); 
+            store.commit('proteinSelection/initAllPoints', pointList); 
 
-            console.log("after pointList"); 
-            console.log(pointList); 
-            console.log("Creating ActiveLayers");
+            //console.log("after pointList"); 
+            //console.log(pointList); 
+            //console.log("Creating ActiveLayers");
             const layerUI = new ActiveLayers(svgRoot.value as SVGSVGElement);
 
-            console.log(`Creating Axis for ${yTransform}`);            
+            //console.log(`Creating Axis for ${yTransform}`);     
+                  
             const axis = new Axis(svgRoot.value as SVGSVGElement,
                                   props.height, props.width,
                                   yTransform != "none" ? yTransform : undefined );
-            console.log("Drawing Axis");            
+            //console.log("Drawing Axis");     
+                  
             const p: t.Points[] = axis.draw(pointList, 
                                             props.data.xLabel, props.data.yLabel
                                         );
-            layerUI.activeArea = axis.getActiveCorners();
+            console.log("🚀 ~ file: Volcano.vue ~ line 106 ~ draw ~ p", p)
 
-            console.log("Creating Plot");            
+            layerUI.activeArea = axis.getActiveCorners();
+            
+            //console.log("Creating Plot");            
             const ploter = new VolcanoPlot(svgRoot.value as SVGSVGElement,
                                   axis.xScale,
                                   axis.yScale,
                                   axis.frame,
                                   axis.gX,
                                   axis.gY);            
-            console.log("Drawing Plot");                        
+            //console.log("Drawing Plot");                        
             ploter.draw(p);
             
-            console.log("Creating Sliders");                        
+            //console.log("Creating Sliders");                        
             const sliderUI = new Sliders(svgRoot.value as SVGSVGElement, 
                                          axis.getActiveCorners(), 
                                          axis.marginBot.marginOuter);            
-            console.log("Drawing Sliders");                        
+            //console.log("Drawing Sliders");                        
             sliderUI.draw();
-            
+   
             // Adding/Resizing Layers Logic
-            axis.onActiveBackgroundClick( (x, y)=> layerUI.toggle(sliderUI, x, y) );
+            axis.onActiveBackgroundClick( (x, y)=> {
+                
+                const selectCoords = layerUI.toggle(sliderUI, x, y);
+                console.log("select", selectCoords); 
+                store.commit("proteinSelection/filterPoints", {coords: selectCoords, xScale : axis.xScale, yScale : axis.yScale})
+                console.log("filter", store.state.proteinSelection.filterPoints.length)
+                //filterPoints(selectCoords, axis.xScale, axis.yScale); 
+            
+            } );
+
             sliderUI.onSlide(() => layerUI.resize(sliderUI) );
 
             emit('volcano-loaded-draw'); 
@@ -158,27 +182,27 @@ export default defineComponent({
         /* ---------------- */
         };
         watch( (props.data), async (newData, oldData) =>{
-            console.log("Data changed from");
-            //console.dir(oldData);
-            console.log("to");
-            //console.dir(newData);
+            //console.log("Data changed from");
+            ////console.dir(oldData);
+            //console.log("to");
+            ////console.dir(newData);
             await draw(newData, transformy.value);
-            console.log("END DRAW"); 
-            /*setTimeout(()=>{ console.log("Changing transform");
+            //console.log("END DRAW"); 
+            /*setTimeout(()=>{ //console.log("Changing transform");
                               draw(newData, "-log10");}
                             , 7000);*/
         });
         watch( (transformy), (newTransform, oldTransform) =>{
-            console.log("transform changed from");
-            console.dir(newTransform);
-            console.log("to");
-            console.dir(oldTransform);
+            //console.log("transform changed from");
+            //console.dir(newTransform);
+            //console.log("to");
+            //console.dir(oldTransform);
             draw(data.value, newTransform);
         });
         onMounted(() => {
-            console.log("onMounted")
+            //console.log("onMounted")
         // the DOM element will be assigned to the ref after initial render
-        //console.log(svgRoot.value) // <div>This is a root element</div>
+        ////console.log(svgRoot.value) // <div>This is a root element</div>
             d3.select(svgRoot.value)
             .attr("height", props.height)
             .attr("width", props.width)

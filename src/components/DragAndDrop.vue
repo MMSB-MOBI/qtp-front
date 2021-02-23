@@ -30,12 +30,12 @@ export default defineComponent({
             const file = d.files[0] as File;
             const onLoad = (e: ProgressEvent<FileReader>) => {
                 dropData.value = e?.target?.result as ArrayBuffer;
-                console.log("Fire XLS");
+                //console.log("Fire XLS");
                 emit('xml-load', dropData.value);
                 /*const d = e?.target?.result;
                 if(d) {
-                    console.log("data In");
-                    console.log(d);
+                    //console.log("data In");
+                    //console.log(d);
                     const data = new Uint8Array(d as ArrayBuffer);
                     emit('xml-load',data);
                 }*/
@@ -47,18 +47,18 @@ export default defineComponent({
         }
 
         const handleDrop = (e: DragEvent) => {
-            console.log("DROP!!");
+            //console.log("DROP!!");
             e.stopPropagation(); e.preventDefault();
             if(e.dataTransfer) 
                 processData(e.dataTransfer)
         };
 
         const coucou = ()=>{
-            console.log("You clicked");
+            //console.log("You clicked");
         }
 
         onMounted ( ()=>{
-            console.log("Mounting drag&drop");
+            //console.log("Mounting drag&drop");
         });
 
         return {coucou, handleDrop};

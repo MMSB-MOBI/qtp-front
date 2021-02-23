@@ -7,14 +7,24 @@ import { axisRight } from "d3";
 import { defineAsyncComponent, registerRuntimeCompiler } from "vue";
 
 type RectSel = d3.Selection<SVGRectElement, number, SVGGElement, unknown>
+interface SelectionCoords{
+    x1: number;
+    x2: number;
+    y1: number;
+    y2: number;
+}
+
 export default class ActiveLayers {
     svg: SVGSVGElement;
     activeArea?: ActiveCorners;
     recPool: RectSel;
+    selectionCoords: number[]; 
     constructor(svg: SVGSVGElement) {
+        console.log("ActiveLayers constructor")
         this.svg = svg;
-        console.log(svg);
-        console.dir(d3.select(this.svg));
+        this.selectionCoords = []; 
+        //console.log(svg);
+        //console.dir(d3.select(this.svg));
         this.recPool = d3.select(this.svg).append('g')
         .attr('class', 'active-layers')
         .selectAll('rect')
@@ -58,10 +68,10 @@ export default class ActiveLayers {
             y2 : Number.parseInt( d3.select(this.svg).attr('height') ) - this.plotFrame.marginBot
         };*/
 
-        console.log("RESIZING LOGIC");
+        //console.log("RESIZING LOGIC");
         const xLimSl = sliderUI.xLimits;
         const yLimSl = sliderUI.yLimits;
-        console.log(sliderUI.currentAxType, sliderUI.currentAxNum);
+        //console.log(sliderUI.currentAxType, sliderUI.currentAxNum);
         this.recPool.each(function(d) {            
             if (d3.select(this).attr('visibility') == 'hidden')
                 return;
@@ -69,44 +79,44 @@ export default class ActiveLayers {
             const y  = Number.parseInt( d3.select(this).attr('y') );
             const x2 = Number.parseInt( d3.select(this).attr('x2') );
             const y2 = Number.parseInt( d3.select(this).attr('y2') );
-            console.log(`Current layer ${x},${y}:${x2},${y2}`);      
-            console.log(`---${sliderUI.currentAxType}`);
-            console.log(`xlimSl ${xLimSl}`);
-            console.dir(`ylimSl ${yLimSl}`);
+            //console.log(`Current layer ${x},${y}:${x2},${y2}`);      
+            //console.log(`---${sliderUI.currentAxType}`);
+            //console.log(`xlimSl ${xLimSl}`);
+            //console.dir(`ylimSl ${yLimSl}`);
             
             // Y slider changing everyone is affected
             if(sliderUI.currentAxType == 'right') {
                 if(y == frame.y1) {
-                    console.log('top_Y is constant stretching bot ')
+                    //console.log('top_Y is constant stretching bot ')
                     d3.select(this).attr('y2', yLimSl[0])
                                    .attr('height', yLimSl[0] - frame.y1);
                 }
                 else if(y2 == frame.y2) {
-                    console.log('bot_Y is constant stretching top ')
+                    //console.log('bot_Y is constant stretching top ')
                     d3.select(this).attr('y', yLimSl[0])
                                    .attr('height', frame.y2 - yLimSl[0]);
                 }
             }
             else if(sliderUI.currentAxType == 'bottom') {
-                console.log(`Bottom slider, current active count ${sliderUI.currentAxNum}`);
+                //console.log(`Bottom slider, current active count ${sliderUI.currentAxNum}`);
                 if(sliderUI.currentAxNum == 1 &&
                     x2 == frame.x2) {
-                    console.log('Right Layer(s) to mod');
-                    console.log(xLimSl);
+                    //console.log('Right Layer(s) to mod');
+                    //console.log(xLimSl);
                     d3.select(this).attr('x', xLimSl[0])
                     .attr('width', frame.x2 - xLimSl[0]);                    
                 }
                 else if(sliderUI.currentAxNum == 2 &&
                     x == frame.x1) {
-                    console.log('Left Layer(s) to mod');
-                    console.log(xLimSl);
+                    //console.log('Left Layer(s) to mod');
+                    //console.log(xLimSl);
                     d3.select(this).attr('x2', xLimSl[1])
                     .attr('width', xLimSl[1] - frame.x1);                    
                 }
                 else if( x  != frame.x1 && 
                          x2 != frame.x2 ) { 
-                    console.log('Middle Layer(s) to mod');
-                    console.log(xLimSl);
+                    //console.log('Middle Layer(s) to mod');
+                    //console.log(xLimSl);
                     d3.select(this).attr('x', xLimSl[1])
                     .attr('x2', xLimSl[0])
                     .attr('width', xLimSl[0] - xLimSl[1]);       
@@ -115,15 +125,21 @@ export default class ActiveLayers {
         });
     }
     toggle(sliderUI: Sliders, x: number, y: number) {
+        // // console.log("🚀 ~ file: ActiveLayers.ts ~ line 119 ~ toggle ~ sliderUI", sliderUI)
+        console.log("click layer"); 
+        console.log("click", x,y)
+        
         if(! this.activeArea)
         throw('Missing a plot corners to resize active layer');
         const frame: ActiveCorners = this.activeArea;
-        console.log("adding layers");    
+        // // console.log("🚀 ~ file: ActiveLayers.ts ~ line 123 ~ toggle ~ frame", frame)
         const xLimSl = sliderUI.xLimits;
+        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 128 ~ toggle ~ xLimSl", xLimSl)
         const yLimSl = sliderUI.yLimits;
-
-        console.log("DRAWING LOGIC");
-        console.log(x,y);
+        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 130 ~ toggle ~ yLimSl", yLimSl)
+        
+        //console.log("DRAWING LOGIC");
+        //console.log(x,y);
     
         // Upper-left, bottom-right corners of data projection area
         /*
@@ -138,20 +154,22 @@ export default class ActiveLayers {
         
         let {x1, y1, x2, y2} = frame;
         console.log(`Starting ${x1},${y1}:${x2},${y2}`) 
-        console.log(`Ping at ${x} ${y}`);
-        console.log(typeof(x));
-        console.log(sliderUI.xLimits);
-        console.log(sliderUI.yLimits);
+        //console.log(`Ping at ${x} ${y}`);
+        //console.log(typeof(x));
+        //console.log(sliderUI.xLimits);
+        //console.log(sliderUI.yLimits);
         
         const xLeft = Math.min(...xLimSl)
+        // // console.log("🚀 ~ file: ActiveLayers.ts ~ line 151 ~ toggle ~ xLeft", xLeft)
         const xRight = Math.max(...xLimSl)
+        // // console.log("🚀 ~ file: ActiveLayers.ts ~ line 153 ~ toggle ~ xRight", xRight)
         //const xSolo = xLimSl.length == 1;
         const yLim = yLimSl[0];
         if (y >= yLim) {
-            console.log(`Shifting borne inf ${y} >= ${yLim}`);
+            //console.log(`Shifting borne inf ${y} >= ${yLim}`);
             y1 = yLim;
         } else if (y < yLim) {
-            console.log("Shifting borne sup")
+            //console.log("Shifting borne sup")
             y2 = yLim;
         } 
 
@@ -160,16 +178,23 @@ export default class ActiveLayers {
         } else if (x < xLeft) {
             x2 = xLeft
         } else { // We got between 2 sliders
-            console.log("Btwn sliders");
+            //console.log("Btwn sliders");
             x1 = xLeft;
             x2 = xRight;
         }
 
-        console.log(`Painting ${x1},${y1}:${x2},${y2}`);
+        //console.log(`Painting ${x1},${y1}:${x2},${y2}`);
         const xRec = x1;
+        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 176 ~ toggle ~ xRec", xRec)
         const yRec = y1;
+        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 178 ~ toggle ~ yRec", yRec)
         const width = x2 - x1;
+        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 180 ~ toggle ~ width", width)
         const height = y2 - y1;
+        // console.log("🚀 ~ file: ActiveLayers.ts ~ line 182 ~ toggle ~ height", height)
+
+        console.log(x1, y1)
+        console.log(x2, y2)
 
         const newRect = this.getAvailableRec();
         newRect.attr('x', xRec)
@@ -179,6 +204,8 @@ export default class ActiveLayers {
         .attr('width', width)
         .attr('height', height)
         .attr('visibility', 'visible');
+
+        return {x1, x2, y1, y2}; 
        
     } 
 }
