@@ -1,10 +1,10 @@
 <template>
 <div>
 <p>
-Filtered proteins list 
+Filtered proteins list ({{filterPoints.length}})
 </p>
 <ul>
-    <li v-for="point in filterPoints" :key="point">{{point.d.id}} </li>
+    <li v-for="point in filterPoints" :key="point">{{point.d.id}} : {{point.d.fullName}} </li>
 </ul>
 </div>
 </template>

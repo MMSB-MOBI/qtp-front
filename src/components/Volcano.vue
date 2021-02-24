@@ -200,6 +200,7 @@ export default defineComponent({
             //console.dir(newTransform);
             //console.log("to");
             //console.dir(oldTransform);
+            store.commit("proteinSelection/clearFilterPoints")
             draw(data.value, newTransform);
         });
         onMounted(() => {
