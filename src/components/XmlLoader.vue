@@ -34,7 +34,7 @@
                 </p>
             </div>
         </div>
-
+        <div class="overflow-auto">
         <table class="w-auto">
             <thead>
                 <tr> 
@@ -70,7 +70,7 @@
             </thead>
             <tbody>
                 <tr
-                v-for="n in dimensions[0] - 1"
+                v-for="n in paginationRange"
                 :key="n"
                 >
                     <td
@@ -83,7 +83,7 @@
                             >
                             <p 
                             class="cell-content">
-                                {{cell(n,m-1)}}
+                                {{cell(n+1,m-1)}}
                             </p>
                         </div>
                         <div class="resize-cursor" @mousedown="resizeOnMouseDown($event, m)"></div>
@@ -91,6 +91,12 @@
                 </tr>
             </tbody>
         </table>
+        </div>
+        <div class="flex gap-1 p-2">
+            <div class="cursor-pointer p-1 pl-2 pr-2 hover:bg-gray-500" v-for="i in numberOfPages" :key="i" :class="i === currentPage && 'bg-gray-500'" @click="currentPage = i">
+                {{i}}
+            </div>
+        </div>
         
         
     </div>
@@ -105,14 +111,41 @@ import XLSX  from 'xlsx';
 import { useStore } from 'vuex'
 
 import { UniprotDatabase } from '../utilities/uniprot-database';
+import { range } from '../utilities/basic_functions'
 
 export default defineComponent({
     components : { DragAndDrop },
     setup(){
-        console.log("OOOO")
         //For resizable tab
         const curCol = ref(0)
         const pageX = ref(0); 
+        const store = useStore()
+
+        const dimensions: any = computed( () => {
+            return  store.getters.dimensions;
+        });
+
+        const numberPerPage = 10; 
+        const currentPage = ref(1); 
+        const numberOfPages = Number.isInteger(dimensions.value[0] / numberPerPage) ? dimensions.value[0] / numberPerPage : Math.trunc(dimensions.value[0] / numberPerPage) + 1 ; 
+
+
+        //const paginFirstLine = computed(() => (currentPage.value - 1) * numberPerPage); 
+        //const paginLastLine = computed(() => currentPage.value * numberPerPage); 
+
+        const paginationRange = computed(() =>  {
+            const firstLine = (currentPage.value - 1) * numberPerPage
+            let lastLine = currentPage.value * numberPerPage
+            if (currentPage.value === numberOfPages) lastLine = dimensions.value[0] - 1; 
+            console.log("paginationRange")
+            console.log(range(firstLine, lastLine)); 
+            console.log(dimensions.value[0]); 
+            return range(firstLine, lastLine); 
+            
+        })
+
+
+
 
         //const savedWidths: Ref<number[]> = ref([]); 
         //const savedCol = ref(0); 
@@ -120,7 +153,6 @@ export default defineComponent({
 
         const loaded = ref(false);
         const defaultColSelectionStr = ref('(default selection : columns with Abundance Ratio)'); 
-        const store = useStore()
         const wsHead = computed(()=>{ return store.getters.test})
 
         
@@ -145,9 +177,7 @@ export default defineComponent({
             ////console.log("HEADERS", store.getters.sheetNames); 
             return  store.getters.sheetNames;
         });
-        const dimensions: any = computed( () => {
-            return  store.getters.dimensions;
-        });
+
 
         const savedWidths = ref(Array(dimensions.value[1]).fill(''));
 
@@ -186,20 +216,14 @@ export default defineComponent({
             defaultColSelectionStr.value = '(manual selection)'; 
         }
 
-
-
         onMounted(()=>{
             ////console.log("mounted xmlLoader"); 
             window.addEventListener('mousemove', resizeOnMouseMove)
             window.addEventListener('mouseup', resizeOnMouseUp)
-
-
             setTimeout(async() => {
                 //////console.log("trying to fecth")
-
-                
                 const arrayData = await fetch(
-                    'xls/TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins.xlsx'
+                    'xls/TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins_test.ods'
                     )//'../TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins.xlsx')//fetch("../TMT-donées brutes_dev.xlsx")
                     .then( (response) =>{
                         //////console.log(response.status);
@@ -212,7 +236,6 @@ export default defineComponent({
                     //////console.log(arrayData); 
                     const data = new Uint8Array(arrayData);
                     const wb = XLSX.read(data, {type:"array"});
-                    console.log("TYPE", typeof(wb)); 
                     store.dispatch('initStoreBook', wb);
                     store.dispatch('selectColByKeyword', 'Abundance Ratio'); 
                     loaded.value = true;
@@ -241,7 +264,7 @@ export default defineComponent({
             window.removeEventListener("mousemove", resizeOnMouseMove)
             window.removeEventListener('mouseup', resizeOnMouseUp)
         })
-        return { doIt, name, wsHead, increment, loaded, headers, dimensions, cell, resizeOnMouseDown, curCol, pageX, savedWidths, addToSelection, selectedCol, defaultColSelectionStr};
+        return { doIt, name, wsHead, increment, loaded, headers, dimensions, cell, resizeOnMouseDown, curCol, pageX, savedWidths, addToSelection, selectedCol, defaultColSelectionStr, paginationRange, numberOfPages, currentPage};
     }
 });
 </script>
