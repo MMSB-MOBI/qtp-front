@@ -17,16 +17,16 @@
     </div>
     <div>
       <div class="flex p-2 gap-2">
-        <button v-if="displayButton && transformation !== 'none'" class ="bg-purple-500 h-10 p-2" @click="transformation = 'none'" > Raw data </button>
-        <button v-if="displayButton && transformation !== '-log10'" class ="bg-purple-500 h-10 p-2" @click="transformation = '-log10'"> - Log10 transformation </button>
-        <button v-if="displayButton && transformation !== 'log10'" class ="bg-purple-500 h-10 p-2" @click="transformation = 'log10'"> Log10 transformation </button>
+        <button v-if="graphDrawed && transformation !== 'none'" class ="bg-purple-500 h-10 p-2" @click="transformation = 'none'" > Raw data </button>
+        <button v-if="graphDrawed && transformation !== '-log10'" class ="bg-purple-500 h-10 p-2" @click="transformation = '-log10'"> - Log10 transformation </button>
+        <button v-if="graphDrawed && transformation !== 'log10'" class ="bg-purple-500 h-10 p-2" @click="transformation = 'log10'"> Log10 transformation </button>
       </div>
     <div class="flex gap-10">
       <Volcano 
         :data="plotData" :transformy="transformation" 
-        @volcano-loaded-draw="displayButton = true"
-        @volcano-empty-draw="displayButton = false"/>
-      <ProteinsList/>
+        @volcano-loaded-draw="graphDrawed = true"
+        @volcano-empty-draw="graphDrawed = false"/>
+      <ProteinsList v-if="graphDrawed"/>
     <!-- <Volcano height=500 width=500/> -->
     </div>
     </div>
@@ -57,7 +57,7 @@ export default defineComponent({
     } as plotDataType);
 
     const transformation = ref("none"); 
-    const displayButton = ref(false); 
+    const graphDrawed = ref(false); 
 
     const selectable = computed( () => store.getters.getActiveSheet != null );
     const selected = ref(new Array<string>());
@@ -82,7 +82,7 @@ export default defineComponent({
 
       }
     }
-    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, displayButton};
+    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, graphDrawed};
   }
 
 
