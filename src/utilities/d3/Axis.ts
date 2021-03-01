@@ -267,17 +267,21 @@ export class Axis implements PlotFrame{
                
         
         // Restricting bkg click to within margins area
+        
+        
        
         d3.select(this.svg).on('click',
             (e) => {
-                //console.log("CLCIK CTRL" + this );
-                if( e.layerX > frame.x1 && 
-                    e.layerX < frame.x2 &&
-                    e.layerY > frame.y1 && 
-                    e.layerY < frame.y2
+                const x = d3.pointer(e)[0];
+                const y = d3.pointer(e)[1];
+
+                if( x > frame.x1 && 
+                    x < frame.x2 &&
+                    y > frame.y1 && 
+                    y < frame.y2
                     ) 
                     if(this.activeBackGroundCallback)
-                        this.activeBackGroundCallback(e.layerX, e.layerY);       
+                        this.activeBackGroundCallback(x, y);      
             });
 
        

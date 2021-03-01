@@ -53,7 +53,7 @@ export default class ActiveLayers {
             const currentRect = this.recPool.filter((d,idx) => idx === i - 1)
             currentRect.attr('visibility', 'hidden');
             e.stopPropagation();
-            if(this.selectedLayerCallback) this.selectedLayerCallback(e.layerX, e.layerY); 
+            if(this.selectedLayerCallback) this.selectedLayerCallback(d3.pointer(e)[0], d3.pointer(e)[1]); 
         })
     }
     getAvailableRec(): RectSel{
