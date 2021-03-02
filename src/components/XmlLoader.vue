@@ -92,7 +92,7 @@
             </tbody>
         </table>
         </div>
-        <div class="flex gap-1 p-2">
+        <div class="flex flex-wrap gap-1 p-1 text-xs">
             <div class="cursor-pointer p-1 pl-2 pr-2 hover:bg-gray-500" v-for="i in numberOfPages" :key="i" :class="i === currentPage && 'bg-gray-500'" @click="currentPage = i">
                 {{i}}
             </div>
@@ -127,7 +127,11 @@ export default defineComponent({
 
         const numberPerPage = 10; 
         const currentPage = ref(1); 
-        const numberOfPages = Number.isInteger(dimensions.value[0] / numberPerPage) ? dimensions.value[0] / numberPerPage : Math.trunc(dimensions.value[0] / numberPerPage) + 1 ; 
+
+        const numberOfPages = computed(() => {
+            return Number.isInteger(dimensions.value[0] / numberPerPage) ? dimensions.value[0] / numberPerPage : Math.trunc(dimensions.value[0] / numberPerPage) + 1 ; 
+        })
+
 
 
         //const paginFirstLine = computed(() => (currentPage.value - 1) * numberPerPage); 
@@ -136,7 +140,7 @@ export default defineComponent({
         const paginationRange = computed(() =>  {
             const firstLine = (currentPage.value - 1) * numberPerPage
             let lastLine = currentPage.value * numberPerPage
-            if (currentPage.value === numberOfPages) lastLine = dimensions.value[0] - 1; 
+            if (currentPage.value === numberOfPages.value) lastLine = dimensions.value[0] - 1; 
             console.log("paginationRange")
             console.log(range(firstLine, lastLine)); 
             console.log(dimensions.value[0]); 
@@ -223,7 +227,7 @@ export default defineComponent({
             setTimeout(async() => {
                 //////console.log("trying to fecth")
                 const arrayData = await fetch(
-                    'xls/TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins_test.ods'
+                    'xls/TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins.xlsx'
                     )//'../TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins.xlsx')//fetch("../TMT-donées brutes_dev.xlsx")
                     .then( (response) =>{
                         //////console.log(response.status);
