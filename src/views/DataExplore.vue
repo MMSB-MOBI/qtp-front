@@ -1,5 +1,7 @@
 <template>
-
+  <Loader v-if="!uniprotLoaded && !uniprotError" message="Uniprot data are loading..."/>
+  <Error v-if="uniprotError" message="Can't retrieve uniprot data"/>
+  <div v-if="uniprotLoaded">
     <h1>This is a Plot!!</h1>
     Choose data records 
     <button v-if="canDraw"
@@ -27,29 +29,40 @@
         @volcano-loaded-draw="graphDrawed = true"
         @volcano-empty-draw="graphDrawed = false"/>
       <ProteinsList v-if="graphDrawed"/>
+      <GoList/>
     <!-- <Volcano height=500 width=500/> -->
     </div>
     </div>
+  </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref, Ref, reactive } from 'vue';
+import { defineComponent, computed, ref, Ref, reactive, onMounted } from 'vue';
 import { useStore, mapGetters } from 'vuex'
 //import Sliders from '@/components/Sliders.vue';
 import Volcano from '@/components/Volcano.vue';
 import ProteinsList from '@/components/ProteinsList.vue';
+import GoList from '@/components/GoList.vue'; 
+import Error from '@/components/global/Error.vue'; 
+import Loader from '@/components/global/Loader.vue'; 
 import { plotData  as plotDataType, transform} from '../utilities/models/volcano';
 import { toggle } from '../utilities/Arrays';
+import protToGoWorker from '@/workers/prot_to_go_worker'; 
+import { UniprotDatabase } from '../utilities/uniprot-database';
+import * as t from '../utilities/models/volcano';
 export default defineComponent({
 
 
-  components: { /*Sliders,*/ Volcano, ProteinsList },
+  components: { /*Sliders,*/ Volcano, ProteinsList, GoList, Error, Loader },
 
   setup() {
+
+    const uniprotLoaded = ref(false); 
+    const uniprotError = ref(false);
+
     const store = useStore();
-
-
     const plotData = reactive({
+      d: new Array<t.PointData>(),
       x: new Array<number>(),
       y: new Array<number>(),
       xLabel:'',
@@ -70,19 +83,43 @@ export default defineComponent({
     const availableData = computed( () => store.getters.getSelectedHeaders);
 
     const canDraw = computed(() => selected.value.length === 2);
+    
     const draw = () => {
       if(canDraw.value) {
         //console.log("lets draw");
         ////console.log(canDraw.value);
-
         plotData.x = store.getters.getColDataByName(selected.value[0], 'number');
-        plotData.y = store.getters.getColDataByName(selected.value[1], 'number');    
+        plotData.y = store.getters.getColDataByName(selected.value[1], 'number');
         plotData.xLabel = selected.value[0];
         plotData.yLabel = selected.value[1];
 
       }
     }
-    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, graphDrawed};
+
+    const getProtData = async () => {
+      const getDataPromise = (acc: string): Promise<t.PointData> => {
+        return new Promise((resolve, reject) => {
+          UniprotDatabase.get(acc).then((data) => resolve(data)).catch((error) => reject(error))
+        })
+      }
+
+      const accessions = store.getters.getColDataByName("Accession", "string"); 
+      return await Promise.all(accessions.map((acc: string) => getDataPromise(acc)))
+    }
+
+   onMounted(() => {
+            //console.log("onMounted")
+        // the DOM element will be assigned to the ref after initial render
+        ////console.log(svgRoot.value) // <div>This is a root element</div>
+        getProtData()
+          .then((values) => uniprotLoaded.value = true)
+          .catch(reason => {
+            uniprotError.value = true; 
+            console.error("can't retrieve uniprot data", reason)
+          })
+    });
+
+    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, graphDrawed, uniprotLoaded, uniprotError};
   }
 
 

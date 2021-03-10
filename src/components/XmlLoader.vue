@@ -7,12 +7,7 @@
    @xml-load="doIt"
    />
 
-    <div v-if="!loaded" class="flex gap-5 p-2 pl-4">
-        <div class="loader-textdiv">
-            <span class=" inline-block align-middle"> Data are loading... </span>
-        </div>
-        <div class="loader"></div>
-   </div>
+    <Loader v-if="!loaded" message="Data are loading..."/>
 
     <div 
     v-if="loaded"
@@ -107,6 +102,7 @@ import { defineComponent, computed, ref, onMounted, onUnmounted, reactive, watch
 //import { ref } from 'vue'
 
 import DragAndDrop from '@/components/DragAndDrop.vue';
+import Loader from '@/components/global/Loader.vue'
 import XLSX  from 'xlsx';
 import { useStore } from 'vuex'
 
@@ -114,7 +110,7 @@ import { UniprotDatabase } from '../utilities/uniprot-database';
 import { range } from '../utilities/basic_functions'
 
 export default defineComponent({
-    components : { DragAndDrop },
+    components : { DragAndDrop, Loader },
     setup(){
         //For resizable tab
         const curCol = ref(0)

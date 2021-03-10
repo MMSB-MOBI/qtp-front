@@ -1,4 +1,5 @@
 type plotData = {
+    d: PointData[]; 
     x: number[];
     y: number[];
     xLabel: string;
@@ -41,4 +42,4 @@ export interface Selection{
 }; 
 
 
-export{ Points, plotData, transform};
+export{ Points, plotData, transform, PointData};

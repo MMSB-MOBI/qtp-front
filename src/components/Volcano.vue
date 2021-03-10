@@ -89,6 +89,8 @@ export default defineComponent({
             console.log("Drawing&Erasing");
             erase();
 
+            //TO DO : don't do UniprotDatabase.get here because it's already done on parent component DataExplore
+            
             const pointList = await Promise.all( data.x.map(async (e, i) => ({
                 x:e, 
                 y: yTransform == '-log10' ? (-1)*Math.log10(data.y[i])
@@ -96,7 +98,7 @@ export default defineComponent({
                                           : data.y[i], // aka 'none'
                 d: await UniprotDatabase.get(uniprotID[i])
                 }) ));
-            console.log("00000", store.state.proteinSelection.allPoints.length); 
+            
             store.commit('proteinSelection/initAllPoints', pointList); 
 
             //console.log("after pointList"); 
