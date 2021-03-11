@@ -29,7 +29,8 @@
         @volcano-loaded-draw="graphDrawed = true"
         @volcano-empty-draw="graphDrawed = false"/>
       <ProteinsList v-if="graphDrawed"/>
-      <GoList/>
+      <GoList v-if="goLoaded && graphDrawed"/>
+      <Loader v-if="!goLoaded && graphDrawed" message="GO data are loading..."/>
     <!-- <Volcano height=500 width=500/> -->
     </div>
     </div>
@@ -37,7 +38,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref, Ref, reactive, onMounted } from 'vue';
+import { defineComponent, computed, ref, Ref, reactive, onMounted, onUnmounted } from 'vue';
 import { useStore, mapGetters } from 'vuex'
 //import Sliders from '@/components/Sliders.vue';
 import Volcano from '@/components/Volcano.vue';
@@ -47,7 +48,7 @@ import Error from '@/components/global/Error.vue';
 import Loader from '@/components/global/Loader.vue'; 
 import { plotData  as plotDataType, transform} from '../utilities/models/volcano';
 import { toggle } from '../utilities/Arrays';
-import protToGoWorker from '@/workers/prot_to_go_worker'; 
+//import protToGoWorker from '@/workers/prot_to_go_worker'; 
 import { UniprotDatabase } from '../utilities/uniprot-database';
 import * as t from '../utilities/models/volcano';
 export default defineComponent({
@@ -59,6 +60,7 @@ export default defineComponent({
 
     const uniprotLoaded = ref(false); 
     const uniprotError = ref(false);
+    const goLoaded = ref(false);
 
     const store = useStore();
     const plotData = reactive({
@@ -84,7 +86,10 @@ export default defineComponent({
 
     const canDraw = computed(() => selected.value.length === 2);
 
-    const uniprotData: Ref<unknown[]> = ref([]); //TO DO : type
+    let uniprotData: t.PointData[] = []; //TO DO : type
+    const protToGoWorker = new Worker('@/workers/protToGoWorker.ts', {type: 'module'})
+
+    
     
     const draw = () => {
       if(canDraw.value) {
@@ -98,10 +103,8 @@ export default defineComponent({
       }
     }
 
-    const getProtData = async () => {
-      //TO DO : typer cette merde
-      
-      const getDataPromise = (acc: string) => {
+    const getProtData = async (): Promise<t.PointData[]> => {      
+      const getDataPromise = (acc: string): Promise<t.PointData> => {
         return new Promise((resolve, reject) => {
           UniprotDatabase.get(acc).then((data) => resolve(data)).catch((error) => reject(error))
         })
@@ -112,22 +115,35 @@ export default defineComponent({
     }
 
    onMounted(() => {
-            //console.log("onMounted")
+        console.log("DataExplore onMounted")
         // the DOM element will be assigned to the ref after initial render
         ////console.log(svgRoot.value) // <div>This is a root element</div>
+
         getProtData()
           .then((values) => {
+            console.log("prot data loaded")
             uniprotLoaded.value = true
-            uniprotData.value = values
+            uniprotData = values
+            protToGoWorker.postMessage(uniprotData)
 
           })
           .catch(reason => {
             uniprotError.value = true; 
             console.error("can't retrieve uniprot data", reason)
           })
+
+        protToGoWorker.onmessage = event => {
+          goLoaded.value = true; 
+        }
+
+        
     });
 
-    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, graphDrawed, uniprotLoaded, uniprotError};
+    onUnmounted(() => {
+      protToGoWorker.terminate()
+    })
+
+    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, graphDrawed, uniprotLoaded, uniprotError, goLoaded};
   }
 
 

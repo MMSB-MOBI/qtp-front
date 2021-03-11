@@ -42,4 +42,4 @@ export interface Selection{
 }; 
 
 
-export{ Points, plotData, transform, PointData};
+export{ Points, plotData, transform, PointData, GOData};
