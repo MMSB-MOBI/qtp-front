@@ -83,6 +83,8 @@ export default defineComponent({
     const availableData = computed( () => store.getters.getSelectedHeaders);
 
     const canDraw = computed(() => selected.value.length === 2);
+
+    const uniprotData: Ref<unknown[]> = ref([]); //TO DO : type
     
     const draw = () => {
       if(canDraw.value) {
@@ -97,7 +99,9 @@ export default defineComponent({
     }
 
     const getProtData = async () => {
-      const getDataPromise = (acc: string): Promise<t.PointData> => {
+      //TO DO : typer cette merde
+      
+      const getDataPromise = (acc: string) => {
         return new Promise((resolve, reject) => {
           UniprotDatabase.get(acc).then((data) => resolve(data)).catch((error) => reject(error))
         })
@@ -112,7 +116,11 @@ export default defineComponent({
         // the DOM element will be assigned to the ref after initial render
         ////console.log(svgRoot.value) // <div>This is a root element</div>
         getProtData()
-          .then((values) => uniprotLoaded.value = true)
+          .then((values) => {
+            uniprotLoaded.value = true
+            uniprotData.value = values
+
+          })
           .catch(reason => {
             uniprotError.value = true; 
             console.error("can't retrieve uniprot data", reason)
