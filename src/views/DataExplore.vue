@@ -1,6 +1,7 @@
 <template>
   <Loader v-if="!uniprotLoaded && !uniprotError" message="Uniprot data are loading..."/>
   <Error v-if="uniprotError" message="Can't retrieve uniprot data"/>
+
   <div v-if="uniprotLoaded">
     <h1>This is a Plot!!</h1>
     Choose data records 
@@ -28,9 +29,11 @@
         :data="plotData" :transformy="transformation" 
         @volcano-loaded-draw="graphDrawed = true"
         @volcano-empty-draw="graphDrawed = false"/>
-      <ProteinsList v-if="graphDrawed"/>
-      <GoList v-if="goLoaded && graphDrawed"/>
-      <Loader v-if="!goLoaded && graphDrawed" message="GO data are loading..."/>
+    <div class="flex w-full"> 
+      <ProteinsList v-if="graphDrawed" class="flex-grow-0 w-full"/>
+      <GoList v-if="goLoaded && graphDrawed" :data="goData" class="flex-grow-0 w-full"/>
+      <Loader v-if="!goLoaded && graphDrawed" message="GO data are loading..." class="flex-grow-0 w-full"/>
+    </div>      
     <!-- <Volcano height=500 width=500/> -->
     </div>
     </div>
@@ -86,7 +89,8 @@ export default defineComponent({
 
     const canDraw = computed(() => selected.value.length === 2);
 
-    let uniprotData: t.PointData[] = []; //TO DO : type
+    let uniprotData: t.PointData[] = [];
+    const goData: Ref<t.GOIndexed> = ref({}); 
     const protToGoWorker = new Worker('@/workers/protToGoWorker.ts', {type: 'module'})
 
     
@@ -99,6 +103,7 @@ export default defineComponent({
         plotData.y = store.getters.getColDataByName(selected.value[1], 'number');
         plotData.xLabel = selected.value[0];
         plotData.yLabel = selected.value[1];
+        plotData.d = uniprotData; 
 
       }
     }
@@ -134,6 +139,7 @@ export default defineComponent({
 
         protToGoWorker.onmessage = event => {
           goLoaded.value = true; 
+          goData.value = event.data; 
         }
 
         
@@ -143,7 +149,7 @@ export default defineComponent({
       protToGoWorker.terminate()
     })
 
-    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, graphDrawed, uniprotLoaded, uniprotError, goLoaded};
+    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, graphDrawed, uniprotLoaded, uniprotError, goLoaded, goData};
   }
 
 

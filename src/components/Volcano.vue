@@ -1,5 +1,4 @@
 <template>
-
 <div>
     <!-- <button @click="test()" class="p-1 border rounded shadow w-15 h-10">TEST</button> -->
 
@@ -20,7 +19,7 @@ class VolcanoData {
 } 
 */
 
-import { defineComponent, PropType, ref, onMounted, computed, Ref, watch, toRefs, onUnmounted } from 'vue';
+import { defineComponent, PropType, ref, onMounted, computed, Ref, watch, toRefs, onUnmounted, onUpdated } from 'vue';
     
 import * as d3 from "d3";
 
@@ -43,6 +42,7 @@ export default defineComponent({
             default : {
                 x:[],
                 y:[],
+                d:[],
                 xLabel:'',
                 yLabel:''
             }
@@ -63,11 +63,22 @@ export default defineComponent({
     },
     setup(props, { emit }){
         const store = useStore(); 
+
+        const unsubscribe = store.subscribe((mutation, state) => {
+            if (mutation.type === "proteinSelection/testColor"){
+                console.log("POUET")
+                const test = volcano.value as VolcanoPlot
+                test.redrawCircle(state.proteinSelection.coloredSvg)
+            }
+        })
+
         //const allPoints: Ref<t.Points[]> = ref([]); 
         //const filteredPoints: Ref<t.Points[]> = ref([]); 
         const uniprotID = store.getters.getColDataByName("Accession", "string");
 
         const svgRoot: Ref<SVGSVGElement|null> = ref(null);
+
+        const volcano: Ref<VolcanoPlot|null> = ref(null); 
         // Getting props (reactive) references
         const { data, transformy } = toRefs(props)
 
@@ -84,10 +95,13 @@ export default defineComponent({
         }*/
 
         //const triggerLoadedEvent = () => {//console.log("triggerLoadedEvent"); emit('volcano-loaded-draw')}; 
- 
+        const test = () => {
+
+        }
         const draw = async (data: t.plotData, yTransform: t.transform=transformy.value) => {
             console.log("Drawing&Erasing");
             erase();
+
 
             //TO DO : don't do UniprotDatabase.get here because it's already done on parent component DataExplore
             
@@ -96,14 +110,9 @@ export default defineComponent({
                 y: yTransform == '-log10' ? (-1)*Math.log10(data.y[i])
                                           : yTransform == 'log10'  ? Math.log10(data.y[i])
                                           : data.y[i], // aka 'none'
-                d: await UniprotDatabase.get(uniprotID[i])
+                d: data.d[i]
                 }) ));
-            
-            store.commit('proteinSelection/initAllPoints', pointList); 
 
-            //console.log("after pointList"); 
-            //console.log(pointList); 
-            //console.log("Creating ActiveLayers");
             const layerUI = new ActiveLayers(svgRoot.value as SVGSVGElement);
 
             //console.log(`Creating Axis for ${yTransform}`);     
@@ -116,19 +125,19 @@ export default defineComponent({
             const p: t.Points[] = axis.draw(pointList, 
                                             props.data.xLabel, props.data.yLabel
                                         );
-            console.log("🚀 ~ file: Volcano.vue ~ line 106 ~ draw ~ p", p)
 
             layerUI.activeArea = axis.getActiveCorners();
             
             //console.log("Creating Plot");            
-            const ploter = new VolcanoPlot(svgRoot.value as SVGSVGElement,
+            volcano.value = new VolcanoPlot(svgRoot.value as SVGSVGElement,
                                   axis.xScale,
                                   axis.yScale,
                                   axis.frame,
                                   axis.gX,
                                   axis.gY);            
-            //console.log("Drawing Plot");                        
-            ploter.draw(p);
+            //console.log("Drawing Plot");   
+
+            volcano.value.draw(p);
             
             //console.log("Creating Sliders");                        
             const sliderUI = new Sliders(svgRoot.value as SVGSVGElement, 
@@ -136,6 +145,9 @@ export default defineComponent({
                                          axis.marginBot.marginOuter);            
             //console.log("Drawing Sliders");                        
             sliderUI.draw();
+
+            store.commit('proteinSelection/initAllPoints', pointList);
+
    
             // Adding/Resizing Layers Logic
             axis.onActiveBackgroundClick( (x, y)=> {
@@ -186,6 +198,7 @@ export default defineComponent({
         */
         /* ---------------- */
         };
+
         watch( (props.data), async (newData, oldData) =>{
             //console.log("Data changed from");
             ////console.dir(oldData);
@@ -216,6 +229,11 @@ export default defineComponent({
         });
         onUnmounted(() => {
             store.commit('proteinSelection/clearFilterPoints')
+            unsubscribe(); 
+        }), 
+
+        onUpdated(() => {
+            console.log("UPDATE VOLCANO")
         })
 
       return {

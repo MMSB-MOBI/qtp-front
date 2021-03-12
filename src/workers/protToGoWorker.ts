@@ -1,15 +1,6 @@
 /* eslint-disable */
 
-import {PointData, GOData} from '../utilities/models/volcano';
-
-interface GOIndexed{
-    [go_id: string] : GOObject
-}
-
-interface GOObject{
-    go: GOData
-    proteins: string[]
-}
+import {GOIndexed, PointData, GOData} from '../utilities/models/volcano';
 
 const ctx: Worker = self as any; 
 
@@ -28,8 +19,6 @@ addEventListener("message", async event => {
             goData[go.id].proteins.push(prot.id)
         }); 
     })
-
-    await sleep(20000); 
 
     ctx.postMessage(goData); 
 })

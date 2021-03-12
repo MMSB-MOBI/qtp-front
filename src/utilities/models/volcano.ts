@@ -10,7 +10,8 @@ type plotData = {
 interface Points {
     x: number;
     y: number;
-    d?: PointData;
+    d: PointData;
+    svg?: any; 
 };
 
 interface GOData{
@@ -41,5 +42,13 @@ export interface Selection{
     y2:number; 
 }; 
 
+interface GOIndexed{
+    [go_id: string] : GOObject
+}
 
-export{ Points, plotData, transform, PointData, GOData};
+interface GOObject{
+    go: GOData
+    proteins: string[]
+}
+
+export{ Points, plotData, transform, PointData, GOData, GOIndexed};

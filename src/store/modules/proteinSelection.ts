@@ -6,6 +6,7 @@ import * as t from '../../utilities/models/volcano';
 interface ProteinSelection{
   allPoints: t.Points[]; 
   filterPoints: t.Points[]; 
+  coloredSvg: any[];
 
 }
 
@@ -19,7 +20,8 @@ export const proteinSelection = {
   namespaced: true, 
   state: {
     allPoints: [],
-    filterPoints : []
+    filterPoints : [],
+    coloredSvg : []
   } as ProteinSelection,
 
   mutations: {
@@ -36,6 +38,12 @@ export const proteinSelection = {
     },
     clearFilterPoints(state: ProteinSelection){
       state.filterPoints = []; 
-  },
+    },
+    testColor(state: ProteinSelection){
+      console.log("testColor"); 
+      const filter = state.allPoints.filter(point => point.d.id === "Q9S4W2")
+      state.coloredSvg.push(filter[0].svg)
+      state.coloredSvg.push(state.allPoints[0].svg)
+    }
   }
 }

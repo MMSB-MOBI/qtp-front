@@ -17,7 +17,7 @@ export default defineComponent({
     setup(){
         const store = useStore(); 
         const filterPoints = computed(()=>{ return store.state.proteinSelection.filterPoints})
-       
+               
        return {filterPoints}
     }
     
