@@ -2,8 +2,9 @@
 <div>
     <!-- <button @click="test()" class="p-1 border rounded shadow w-15 h-10">TEST</button> -->
 
-<svg ref="svgRoot">
+<svg v-if="!error" ref="svgRoot">
 </svg>
+<Error v-if="error" message="error with volcano plot"/>
 </div>
 
 </template>
@@ -30,11 +31,14 @@ import ActiveLayers from '../utilities/d3/ActiveLayers';
 import * as t from '../utilities/models/volcano';
 import { useStore } from 'vuex';
 import { UniprotDatabase } from '../utilities/uniprot-database';
+import Error from '@/components/global/Error.vue'; 
 /*
 This will have to be made reactive in parent .vue
 */
 
 export default defineComponent({
+
+   components: { Error },
 
    props: {
         data: {
@@ -63,13 +67,7 @@ export default defineComponent({
     },
     setup(props, { emit }){
         const store = useStore(); 
-
-        const unsubscribe = store.subscribe((mutation, state) => {
-            if (mutation.type === "proteinSelection/filterHighlight"){
-                const volcano_plot = volcano.value as VolcanoPlot
-                volcano_plot.redrawCircle(state.proteinSelection.coloredSvg)
-            }
-        })
+        const error = ref(false); 
 
         //const allPoints: Ref<t.Points[]> = ref([]); 
         //const filteredPoints: Ref<t.Points[]> = ref([]); 
@@ -80,6 +78,17 @@ export default defineComponent({
         const volcano: Ref<VolcanoPlot|null> = ref(null); 
         // Getting props (reactive) references
         const { data, transformy } = toRefs(props)
+
+        const unsubscribe = store.subscribe((mutation, state) => {
+            if (mutation.type === "proteinSelection/filterHighlight"){
+                if(!volcano) {
+                    console.error("volcano error")
+                    error.value = true; 
+                }
+                const volcano_plot = volcano.value as VolcanoPlot
+                volcano_plot.redrawCircle(state.proteinSelection.coloredSvg)
+            }
+        })
 
         const erase = () => {
             emit('volcano-empty-draw')
@@ -236,7 +245,7 @@ export default defineComponent({
         })
 
       return {
-        svgRoot
+        svgRoot, error
       }
     }
 });

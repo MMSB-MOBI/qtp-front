@@ -9,7 +9,7 @@
             :key="go_obj.go.id"
             @click="clickSelection(go_obj.go.id)"
             :class="{ 'bg-light': go_selection.includes(go_obj.go.id) }">
-                {{go_obj.go.id}} {{go_obj.go.term}}
+                {{go_obj.go.id}} {{go_obj.go.term}} ({{go_obj.proteins.length}})
             </li>
         </ul>
     </div>
