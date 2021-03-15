@@ -1,6 +1,7 @@
 <template>
   <Loader v-if="!uniprotLoaded && !uniprotError" message="Uniprot data are loading..."/>
   <Error v-if="uniprotError" message="Can't retrieve uniprot data"/>
+
   <div v-if="uniprotLoaded">
     <h1>This is a Plot!!</h1>
     Choose data records 
@@ -28,8 +29,11 @@
         :data="plotData" :transformy="transformation" 
         @volcano-loaded-draw="graphDrawed = true"
         @volcano-empty-draw="graphDrawed = false"/>
-      <ProteinsList v-if="graphDrawed"/>
-      <GoList/>
+    <div class="flex w-full"> 
+      <ProteinsList v-if="graphDrawed" class="flex-grow-0 w-full"/>
+      <GoList v-if="goLoaded && graphDrawed" :data="goData" class="flex-grow-0 w-full"/>
+      <Loader v-if="!goLoaded && graphDrawed" message="GO data are loading..." class="flex-grow-0 w-full"/>
+    </div>      
     <!-- <Volcano height=500 width=500/> -->
     </div>
     </div>
@@ -37,7 +41,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref, Ref, reactive, onMounted } from 'vue';
+import { defineComponent, computed, ref, Ref, reactive, onMounted, onUnmounted } from 'vue';
 import { useStore, mapGetters } from 'vuex'
 //import Sliders from '@/components/Sliders.vue';
 import Volcano from '@/components/Volcano.vue';
@@ -47,7 +51,7 @@ import Error from '@/components/global/Error.vue';
 import Loader from '@/components/global/Loader.vue'; 
 import { plotData  as plotDataType, transform} from '../utilities/models/volcano';
 import { toggle } from '../utilities/Arrays';
-import protToGoWorker from '@/workers/prot_to_go_worker'; 
+//import protToGoWorker from '@/workers/prot_to_go_worker'; 
 import { UniprotDatabase } from '../utilities/uniprot-database';
 import * as t from '../utilities/models/volcano';
 export default defineComponent({
@@ -59,6 +63,7 @@ export default defineComponent({
 
     const uniprotLoaded = ref(false); 
     const uniprotError = ref(false);
+    const goLoaded = ref(false);
 
     const store = useStore();
     const plotData = reactive({
@@ -84,7 +89,11 @@ export default defineComponent({
 
     const canDraw = computed(() => selected.value.length === 2);
 
-    const uniprotData: Ref<unknown[]> = ref([]); //TO DO : type
+    let uniprotData: t.PointData[] = [];
+    const goData: Ref<t.GOIndexed> = ref({}); 
+    const protToGoWorker = new Worker('@/workers/protToGoWorker.ts', {type: 'module'})
+
+    
     
     const draw = () => {
       if(canDraw.value) {
@@ -94,14 +103,13 @@ export default defineComponent({
         plotData.y = store.getters.getColDataByName(selected.value[1], 'number');
         plotData.xLabel = selected.value[0];
         plotData.yLabel = selected.value[1];
+        plotData.d = uniprotData; 
 
       }
     }
 
-    const getProtData = async () => {
-      //TO DO : typer cette merde
-      
-      const getDataPromise = (acc: string) => {
+    const getProtData = async (): Promise<t.PointData[]> => {      
+      const getDataPromise = (acc: string): Promise<t.PointData> => {
         return new Promise((resolve, reject) => {
           UniprotDatabase.get(acc).then((data) => resolve(data)).catch((error) => reject(error))
         })
@@ -112,22 +120,36 @@ export default defineComponent({
     }
 
    onMounted(() => {
-            //console.log("onMounted")
+        console.log("DataExplore onMounted")
         // the DOM element will be assigned to the ref after initial render
         ////console.log(svgRoot.value) // <div>This is a root element</div>
+
         getProtData()
           .then((values) => {
+            console.log("prot data loaded")
             uniprotLoaded.value = true
-            uniprotData.value = values
+            uniprotData = values
+            protToGoWorker.postMessage(uniprotData)
 
           })
           .catch(reason => {
             uniprotError.value = true; 
             console.error("can't retrieve uniprot data", reason)
           })
+
+        protToGoWorker.onmessage = event => {
+          goLoaded.value = true; 
+          goData.value = event.data; 
+        }
+
+        
     });
 
-    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, graphDrawed, uniprotLoaded, uniprotError};
+    onUnmounted(() => {
+      protToGoWorker.terminate()
+    })
+
+    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, graphDrawed, uniprotLoaded, uniprotError, goLoaded, goData};
   }
 
 

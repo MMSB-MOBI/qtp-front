@@ -26,6 +26,7 @@ export default class VolcanoPlot {
         this.gX = gX;
         this.gY = gY;
     }
+    
     draw(data: Points[]) {
         if(this.container) {
             //console.log("OTHOT");
@@ -51,7 +52,20 @@ export default class VolcanoPlot {
                 /*.attr('class', circleClass)*/
                 .on('mouseenter', (e,d) => console.log(d))
                 .on('click', (e, d) => { e.stopPropagation();  })
-                //.each((d)=>//console.log("pouet"))
+                .each(function(d) { d.svg = this }); 
                 ;
+        return data; 
+    }
+
+    redrawCircle(circles:any[]){
+        console.log("REDRAW CIRCLE")
+        const container = this.container 
+        ? this.container
+        : d3.select(this.svg).append('g')
+            .attr('class', 'plot-container');
+        
+        
+        d3.select(circles[0]).attr("fill", "red")
+        d3.select(circles[1]).raise().attr("fill", "red")
     }
 }
