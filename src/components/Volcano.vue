@@ -65,10 +65,9 @@ export default defineComponent({
         const store = useStore(); 
 
         const unsubscribe = store.subscribe((mutation, state) => {
-            if (mutation.type === "proteinSelection/testColor"){
-                console.log("POUET")
-                const test = volcano.value as VolcanoPlot
-                test.redrawCircle(state.proteinSelection.coloredSvg)
+            if (mutation.type === "proteinSelection/filterHighlight"){
+                const volcano = volcano.value as VolcanoPlot
+                volcano.redrawCircle(state.proteinSelection.coloredSvg)
             }
         })
 

@@ -19,7 +19,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType, ref, Ref } from 'vue';
-import {GOIndexed} from '../utilities/models/volcano';
+import { GOIndexed, Points} from '../utilities/models/volcano';
 import { useStore } from 'vuex'
 
 export default defineComponent({
@@ -39,9 +39,19 @@ export default defineComponent({
 
         const clickSelection = (go: string) => {
             console.log("clickSelection")
-            store.commit('proteinSelection/testColor');
             if (go_selection.value.includes(go)) go_selection.value = go_selection.value.filter(go_select => go_select !== go)
             else go_selection.value.push(go)
+
+            const filterPredicate = (point: Points): boolean => {
+                const go_point = point.d.GO.map(go => go.id)
+                const intersect = go_selection.value.filter(go_id => go_point.includes(go_id))
+                if (intersect.length === 0) return false
+                else return true
+            }
+
+            store.commit("proteinSelection/filterHighlight",filterPredicate); 
+            console.log(store.state.proteinSelection.coloredSvg); 
+
         }
 
         return {go_data, clickSelection, go_selection}

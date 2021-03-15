@@ -39,11 +39,10 @@ export const proteinSelection = {
     clearFilterPoints(state: ProteinSelection){
       state.filterPoints = []; 
     },
-    testColor(state: ProteinSelection){
-      console.log("testColor"); 
-      const filter = state.allPoints.filter(point => point.d.id === "Q9S4W2")
-      state.coloredSvg.push(filter[0].svg)
-      state.coloredSvg.push(state.allPoints[0].svg)
+
+    filterHighlight(state: ProteinSelection, predicate_fn: (point:t.Points ) => boolean){
+      const filter_svg = state.allPoints.filter(point => predicate_fn(point)).map(p => p.svg)
+      state.coloredSvg = filter_svg
     }
   }
 }

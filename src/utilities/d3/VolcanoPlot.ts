@@ -58,14 +58,7 @@ export default class VolcanoPlot {
     }
 
     redrawCircle(circles:any[]){
-        console.log("REDRAW CIRCLE")
-        const container = this.container 
-        ? this.container
-        : d3.select(this.svg).append('g')
-            .attr('class', 'plot-container');
-        
-        
-        d3.select(circles[0]).attr("fill", "red")
-        d3.select(circles[1]).raise().attr("fill", "red")
+        this.container?.selectAll('circle').attr("fill", "black")
+        circles.forEach(circle => d3.select(circle).raise().attr("fill", "red"))    
     }
 }
