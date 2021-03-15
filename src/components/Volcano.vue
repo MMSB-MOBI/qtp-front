@@ -66,8 +66,8 @@ export default defineComponent({
 
         const unsubscribe = store.subscribe((mutation, state) => {
             if (mutation.type === "proteinSelection/filterHighlight"){
-                const volcano = volcano.value as VolcanoPlot
-                volcano.redrawCircle(state.proteinSelection.coloredSvg)
+                const volcano_plot = volcano.value as VolcanoPlot
+                volcano_plot.redrawCircle(state.proteinSelection.coloredSvg)
             }
         })
 
