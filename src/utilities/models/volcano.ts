@@ -1,9 +1,7 @@
-type plotData = {
-    d: PointData[]; 
-    x: number[];
-    y: number[];
+interface PlotData {
     xLabel: string;
     yLabel: string;
+    points : Points[]; 
 };
 
 /* Container to build scatter plot with associated datum */
@@ -51,4 +49,4 @@ interface GOObject{
     proteins: string[]
 }
 
-export{ Points, plotData, transform, PointData, GOData, GOIndexed};
+export{ Points, PlotData, transform, PointData, GOData, GOIndexed};
