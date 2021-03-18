@@ -4,7 +4,8 @@ module.exports = {
   theme: {
     backgroundColor: theme => ({
       ...theme('colors'),
-      'light' : 'thistle'
+      'light' : 'thistle',
+      'pannelSelection' : '#FDE68A'
     }),
     extend: {},
   },

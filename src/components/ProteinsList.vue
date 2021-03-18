@@ -1,5 +1,5 @@
 <template>
-<div v-if="filterPoints.length" class="list p-2 mr-5 overflow-scroll w-full">
+<div class="list p-2 mr-5 overflow-scroll w-full">
 <p class="font-bold mb-1">
 Filtered proteins list ({{filterPoints.length}}) :
 </p>
@@ -16,7 +16,7 @@ import { useStore } from 'vuex'
 export default defineComponent({
     setup(){
         const store = useStore(); 
-        const filterPoints = computed(()=>{ return store.state.proteinSelection.filterPoints})
+        const filterPoints = computed(()=>{ return store.state.proteinSelection.filterPannelPoints})
                
        return {filterPoints}
     }

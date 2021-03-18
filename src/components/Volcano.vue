@@ -2,8 +2,19 @@
 <div>
     <!-- <button @click="test()" class="p-1 border rounded shadow w-15 h-10">TEST</button> -->
 
-<svg v-if="!error" ref="svgRoot">
-</svg>
+<div v-if="!error" class="bg-gray-100">
+    <svg ref="svgRoot">
+    </svg>
+    <div v-if="drawed" class="flex w-full gap-3 p-3">
+        <div class="bg-pannelSelection border border-black w-1/6">
+
+        </div>
+        <div class="flex-grow w-5/6">
+            <span> Selected area </span>
+        </div>
+
+    </div>
+</div>
 <Error v-if="error" message="error with volcano plot"/>
 </div>
 
@@ -68,6 +79,7 @@ export default defineComponent({
     setup(props, { emit }){
         const store = useStore(); 
         const error = ref(false); 
+        const drawed = ref(false); 
 
         //const allPoints: Ref<t.Points[]> = ref([]); 
         //const filteredPoints: Ref<t.Points[]> = ref([]); 
@@ -103,9 +115,31 @@ export default defineComponent({
         }*/
 
         //const triggerLoadedEvent = () => {//console.log("triggerLoadedEvent"); emit('volcano-loaded-draw')}; 
-        const test = () => {
+        const defaultSelectionArea = (sliderUI: Sliders, layerUI : ActiveLayers, xScale: d3.ScaleLinear<number, number>, yScale: d3.ScaleLinear<number, number>) => {
+            const x_lims = sliderUI.xLimits.sort((a: number, b: number) => a - b)
+            const y_lims = sliderUI.yLimits.sort((a: number, b: number) => a - b)
+            x_lims.push(x_lims[0] - 1)
+            y_lims.push(y_lims[0] - 1)
+
+            x_lims.forEach(x => {
+               y_lims.forEach(y => {
+                    const layer_coords = layerUI.toggle(sliderUI, x, y)
+                    const predicate = filterPoints(layer_coords, xScale, yScale)
+                    store.commit("proteinSelection/addToFilterPannel", predicate)
+                })
+            })
+        }
+
+        const filterPoints = (layer_coords: {x1:number, x2:number, y1:number, y2:number}, xScale: d3.ScaleLinear<number, number>, yScale: d3.ScaleLinear<number, number>) => {
+            
+            const filterPointsPredicate = (point: t.Points): boolean => {
+                return xScale(point.x) > layer_coords.x1 && xScale(point.x) <= layer_coords.x2 && yScale(point.y) > layer_coords.y1 && yScale(point.y) <= layer_coords.y2
+                
+            }
+            return filterPointsPredicate
 
         }
+
         const draw = async (data: t.plotData, yTransform: t.transform=transformy.value) => {
             console.log("Drawing&Erasing");
             erase();
@@ -150,29 +184,30 @@ export default defineComponent({
             //console.log("Creating Sliders");                        
             const sliderUI = new Sliders(svgRoot.value as SVGSVGElement, 
                                          axis.getActiveCorners(), 
-                                         axis.marginBot.marginOuter);            
+                                         axis.marginBot.marginOuter);           
             //console.log("Drawing Sliders");                        
             sliderUI.draw();
 
             store.commit('proteinSelection/initAllPoints', pointList);
 
+            defaultSelectionArea(sliderUI, layerUI, axis.xScale, axis.yScale); 
    
             // Adding/Resizing Layers Logic
             axis.onActiveBackgroundClick( (x, y)=> {
                 const selectCoords = layerUI.toggle(sliderUI, x, y);
-                console.log("select", selectCoords); 
-                store.commit("proteinSelection/addFilterPoints", {coords: selectCoords, xScale : axis.xScale, yScale : axis.yScale})
+                const predicate = filterPoints(selectCoords, axis.xScale, axis.yScale)
+                store.commit("proteinSelection/addToFilterPannel", predicate)
             
             } );
 
             layerUI.onSelectedLayerClick((x,y) => {
-                console.log("CLICK SELECTED LAYER"); 
                 const unselectCoords = layerUI.getClickRectCoords(sliderUI, x,y); 
-                store.commit("proteinSelection/removeFilterPoints", {coords: unselectCoords, xScale : axis.xScale, yScale : axis.yScale})
+                const predicate = filterPoints(unselectCoords, axis.xScale, axis.yScale);
+                store.commit("proteinSelection/removeFromFilterPannel", predicate); 
             })
 
             sliderUI.onSlide(() => layerUI.resize(sliderUI) );
-
+            drawed.value = true; 
             emit('volcano-loaded-draw'); 
 
         /* Trying zooming stuff  TO BE CONTINUED 
@@ -208,15 +243,11 @@ export default defineComponent({
         };
 
         watch( (props.data), async (newData, oldData) =>{
-            //console.log("Data changed from");
-            ////console.dir(oldData);
-            //console.log("to");
-            ////console.dir(newData);
+            
+            console.log("PLOT DATA CHANGES")
+            //GO SEARCH IN WORKER AND STORE IT INTO STORE
             await draw(newData, transformy.value);
-            //console.log("END DRAW"); 
-            /*setTimeout(()=>{ //console.log("Changing transform");
-                              draw(newData, "-log10");}
-                            , 7000);*/
+            
         });
         watch( (transformy), (newTransform, oldTransform) =>{
             //console.log("transform changed from");
@@ -245,7 +276,7 @@ export default defineComponent({
         })
 
       return {
-        svgRoot, error
+        svgRoot, error, drawed
       }
     }
 });

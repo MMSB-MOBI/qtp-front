@@ -49,7 +49,7 @@ export default defineComponent({
                 else return true
             }
 
-            store.commit("proteinSelection/filterHighlight",filterPredicate); 
+            store.commit("proteinSelection/filterHighlight", filterPredicate); 
             console.log(store.state.proteinSelection.coloredSvg); 
 
         }

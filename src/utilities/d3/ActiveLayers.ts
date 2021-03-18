@@ -47,7 +47,7 @@ export default class ActiveLayers {
         .attr('y', 50)
         .attr('width', 50)
         .attr('height', 50)
-        .attr('fill', 'khaki')
+        .attr('fill', '#FDE68A')
         .attr('visibility', 'hidden')
         .on('click', (e,i) => {
             const currentRect = this.recPool.filter((d,idx) => idx === i - 1)
@@ -167,7 +167,7 @@ export default class ActiveLayers {
 
     }
 
-    toggle(sliderUI: Sliders, x: number, y: number) {
+    toggle(sliderUI: Sliders, x: number, y: number): SelectionCoords {
         
         const {x1, x2, y1, y2} = this.getClickRectCoords(sliderUI, x, y); 
 
