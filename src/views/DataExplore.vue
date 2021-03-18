@@ -49,7 +49,7 @@ import ProteinsList from '@/components/ProteinsList.vue';
 import GoList from '@/components/GoList.vue'; 
 import Error from '@/components/global/Error.vue'; 
 import Loader from '@/components/global/Loader.vue'; 
-import { plotData  as plotDataType, transform} from '../utilities/models/volcano';
+import { PlotData, transform} from '../utilities/models/volcano';
 import { toggle } from '../utilities/Arrays';
 //import protToGoWorker from '@/workers/prot_to_go_worker'; 
 import { UniprotDatabase } from '../utilities/uniprot-database';
@@ -66,13 +66,7 @@ export default defineComponent({
     const goLoaded = ref(false);
 
     const store = useStore();
-    const plotData = reactive({
-      d: new Array<t.PointData>(),
-      x: new Array<number>(),
-      y: new Array<number>(),
-      xLabel:'',
-      yLabel:''
-    } as plotDataType);
+    const plotData: t.PlotData = reactive({xLabel : '', yLabel: '', points: []}) 
 
     const transformation = ref("none"); 
     const graphDrawed = ref(false); 
@@ -99,11 +93,22 @@ export default defineComponent({
       if(canDraw.value) {
         //console.log("lets draw");
         ////console.log(canDraw.value);
-        plotData.x = store.getters.getColDataByName(selected.value[0], 'number');
-        plotData.y = store.getters.getColDataByName(selected.value[1], 'number');
+        const x_list = store.getters.getColDataByName(selected.value[0], 'number')
+        const y_list = store.getters.getColDataByName(selected.value[1], 'number')
+        
+        const points = x_list.map((e: number, i: number) => ({
+                x:e, 
+                y: y_list[i], // aka 'none'
+                d: uniprotData[i]
+          }))
+          .filter((point: t.Points) => !isNaN(point.x));
+
+        protToGoWorker.postMessage(points.map((p: t.Points) => p.d))
+
         plotData.xLabel = selected.value[0];
         plotData.yLabel = selected.value[1];
-        plotData.d = uniprotData; 
+        plotData.points = points; 
+
 
       }
     }
@@ -129,7 +134,6 @@ export default defineComponent({
             console.log("prot data loaded")
             uniprotLoaded.value = true
             uniprotData = values
-            protToGoWorker.postMessage(uniprotData)
 
           })
           .catch(reason => {

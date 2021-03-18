@@ -53,7 +53,7 @@ export default defineComponent({
 
    props: {
         data: {
-            type: Object as PropType<t.plotData>,
+            type: Object as PropType<t.PlotData>,
             default : {
                 x:[],
                 y:[],
@@ -146,15 +146,15 @@ export default defineComponent({
 
 
             //TO DO : don't do UniprotDatabase.get here because it's already done on parent component DataExplore
-            
-            const pointList = await Promise.all( data.x.map(async (e, i) => ({
-                x:e, 
-                y: yTransform == '-log10' ? (-1)*Math.log10(data.y[i])
-                                          : yTransform == 'log10'  ? Math.log10(data.y[i])
-                                          : data.y[i], // aka 'none'
-                d: data.d[i]
-                }) ));
 
+            const pointList = data.points.map(point => ({
+                x: point.x, 
+                y: yTransform == '-log10' ? (-1)*Math.log10(point.y)
+                                          : yTransform == 'log10'  ? Math.log10(point.y)
+                                          : point.y, // aka 'none'
+                d : point.d
+            }))
+            
             const layerUI = new ActiveLayers(svgRoot.value as SVGSVGElement);
 
             //console.log(`Creating Axis for ${yTransform}`);     

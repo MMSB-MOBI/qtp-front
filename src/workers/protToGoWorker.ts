@@ -20,7 +20,7 @@ const sortHash = (hashmap: GOIndexed) => {
 
 addEventListener("message", async event => {
     console.log("protToGoWorker receive message")
-
+    console.log(event); 
     const goData:GOIndexed = {}
 
     event.data.forEach( (prot: PointData) => {
@@ -32,7 +32,6 @@ addEventListener("message", async event => {
 
 
     const sortedData = sortHash(goData)
-    console.log("SORTED", sortedData); 
 
     ctx.postMessage(sortedData); 
 })
