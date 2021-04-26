@@ -1,10 +1,9 @@
 <template>
 <div class="m-2">
-    <button :disabled="computationLaunched"
-    class="rounded p-2 bg-purple-300 hover:bg-purple-400 disabled:bg-red-500" 
+    <Button :disabled="computationLaunched"
     @click="launchComputation"> 
         Compute ORA on selected proteins
-    </button>
+    </Button>
 
     <span v-if="computationLaunched" class="close hover:text-gray-500" @click="closeResults"> &times; </span>
     
@@ -43,10 +42,12 @@ import { useStore } from 'vuex';
 import { PwasAPIInput } from '../types/ora'
 
 import Loader from '@/components/global/Loader.vue'; 
+import Button from 'primevue/button';
+
 
 export default defineComponent({
 
-    components : { Loader }, 
+    components : { Loader, Button }, 
 
     props: {
         taxid: {
@@ -73,7 +74,8 @@ export default defineComponent({
             
             const method = "fisher"; 
             const expAccessions = store.getters.getColDataByName("Accession", 'string')
-        
+            console.log("expAccesions", expAccessions)
+            console.log("selectedProts", props.selectedProts)
             const apiInput: PwasAPIInput = {
                 proteinsExp : expAccessions,
                 proteinsDelta : props.selectedProts, 
