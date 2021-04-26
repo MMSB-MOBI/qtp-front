@@ -3,24 +3,30 @@
   <Loader v-if="!uniprotLoaded && !uniprotError" message="Uniprot data are loading..."/>
   <Error v-if="uniprotError" message="Can't retrieve uniprot data"/>
   <Warning v-if="!taxid && !uniprotError && uniprotLoaded" message="More than 1 taxid in your protein data. Impossible to compute ORA."/>
-
   <div class="relative">
-    <div v-if="volcanoDisabled" class="disabled"/>
-    <div>
-      <Listbox v-model="selected" :options="availableData" :multiple="true" :filter="true" filterPlaceholder="Search" listStyle="max-height:250px" optionLabel="name">
-      <template #header>
-        <p class="pl-3 pt-3 text-xl font-semibold"> Choose data records to display (x and y axes) </p>
-      </template>
-      </Listbox>
-
-      <Button class="w-full mt-2" label="Plot" :disabled="!canDraw" @click="draw"/>
-
-      <div>
-        <Volcano 
+      <div v-if="volcanoDisabled" class="disabled"/>
+      <div v-if="uniprotLoaded">
+        <h1>This is a Plot!!</h1>
+        Choose data records 
+        <button v-if="canDraw"
+        class="p-1 rounded bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50"
+        @click="draw()"
+        >PLOT IT</button>
+        <div v-if="selectable" class="overflow-y-scroll max-h-24 bg-gray-300">
+          <div 
+          v-for="column in availableData" 
+          :key="column" 
+          v-text="column"
+          @click="select(column)"
+          :class="{ active: isSelected(column) }"
+          ></div>
+        </div>
+        <div>
+          <Volcano 
             :data="plotData" 
             @volcano-drawed="volcanoDrawed=true"
             @prot-selection-change="saveSelectedProtId"/>
-      </div>
+        </div>
     </div>
   </div>
   <ComputeORA v-if="volcanoDrawed && taxid"
@@ -43,24 +49,15 @@ import Error from '@/components/global/Error.vue';
 import Loader from '@/components/global/Loader.vue'; 
 import Warning from '@/components/global/Warning.vue'; 
 import ComputeORA from '@/components/ComputeORA.vue'
-import Listbox from 'primevue/listbox';
-import Button from 'primevue/button';
-
-
 import { toggle } from '../utilities/Arrays';
 //import protToGoWorker from '@/workers/prot_to_go_worker'; 
 import { logDB } from '../utilities/uniprot-storage';
 const UniprotDatabase = logDB(); 
 import * as t from '../types/volcano';
-
-interface SelectionInterface{
-  name: string
-}
-
 export default defineComponent({
 
 
-  components: { /*Sliders,*/ Volcano, ProteinsList, GoList, Error, Loader, ComputeORA, Warning, Listbox, Button },
+  components: { /*Sliders,*/ Volcano, ProteinsList, GoList, Error, Loader, ComputeORA, Warning },
 
   setup() {
 
@@ -77,15 +74,15 @@ export default defineComponent({
     const volcanoDisabled = ref(false); 
 
     const selectable = computed( () => store.getters.getActiveSheet != null );
-    const selected: Ref<SelectionInterface[]> = ref([]);
+    const selected = ref(new Array<string>());
     const select = (field: string) => {
           const _ = toggle(selected.value, field);
           selected.value = _.length <= 2 ? _ : _.slice(-2) ;
         };
 
-    //const isSelected = (field: string) => selected.value.includes(field);
+    const isSelected = (field: string) => selected.value.includes(field);
 
-    const availableData = computed( () => store.getters.getSelectedHeaders.map((header:string) => { return { name : header } }));
+    const availableData = computed( () => store.getters.getSelectedHeaders);
 
     const canDraw = computed(() => selected.value.length === 2);
 
@@ -99,8 +96,8 @@ export default defineComponent({
         volcanoDisabled.value = false; 
         //console.log("lets draw");
         ////console.log(canDraw.value);
-        const x_list = store.getters.getColDataByName(selected.value[0].name, 'number')
-        const y_list = store.getters.getColDataByName(selected.value[1].name, 'number')
+        const x_list = store.getters.getColDataByName(selected.value[0], 'number')
+        const y_list = store.getters.getColDataByName(selected.value[1], 'number')
         
         const points = x_list.map((e: number, i: number) => ({
                 x:e, 
@@ -109,8 +106,8 @@ export default defineComponent({
           }))
           .filter((point: t.Points) => !isNaN(point.x));
 
-        plotData.xLabel = selected.value[0].name;
-        plotData.yLabel = selected.value[1].name;
+        plotData.xLabel = selected.value[0];
+        plotData.yLabel = selected.value[1];
         plotData.points = points; 
 
 
@@ -174,7 +171,7 @@ export default defineComponent({
         
     });
 
-    return {canDraw, draw, availableData, selectable, selected, select, plotData, transformation, uniprotLoaded, uniprotError, volcanoDisabled, volcanoDrawed, taxidWarning, taxid, saveSelectedProtId, selectedProts} ;
+    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, uniprotLoaded, uniprotError, volcanoDisabled, volcanoDrawed, taxidWarning, taxid, saveSelectedProtId, selectedProts} ;
   }
 
 
