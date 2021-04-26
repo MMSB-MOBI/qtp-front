@@ -11,7 +11,7 @@ interface UniprotDatum {
 
 type UniprotFetch = { [index: string]: UniprotDatum|null };
 
-export class UniprotStorage {
+class UniprotStorage {
     data: UniprotFetch;
     providerURL: string|undefined
 
@@ -65,4 +65,17 @@ export class UniprotStorage {
         })
     }
 
+}
+
+
+let UNIPROT_DB:UniprotStorage|undefined = undefined
+
+export const logDB = ():UniprotStorage => {
+    if(!UNIPROT_DB) {
+        UNIPROT_DB = new UniprotStorage()
+        console.log("Create new uniprot db")
+    }
+    else console.log("Load uniprot db")
+    
+    return UNIPROT_DB
 }

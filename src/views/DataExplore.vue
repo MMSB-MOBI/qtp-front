@@ -51,7 +51,8 @@ import Warning from '@/components/global/Warning.vue';
 import ComputeORA from '@/components/ComputeORA.vue'
 import { toggle } from '../utilities/Arrays';
 //import protToGoWorker from '@/workers/prot_to_go_worker'; 
-import { UniprotDatabase } from '../utilities/uniprot-database';
+import { logDB } from '../utilities/uniprot-storage';
+const UniprotDatabase = logDB(); 
 import * as t from '../types/volcano';
 export default defineComponent({
 

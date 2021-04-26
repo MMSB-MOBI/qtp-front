@@ -15,9 +15,16 @@
     "core-js": "^3.6.5",
     "d3": "^6.3.1",
     "lodash": "^4.17.21",
+<<<<<<< HEAD
     "postcss": "^7.0.35",
     "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.0.2",
     "vue": "^3.0.0",
+=======
+    "primeflex": "^2.0.0",
+    "primeicons": "^4.1.0",
+    "primevue": "^3.4.0",
+    "vue": "^3.0.11",
+>>>>>>> f7eebe4... uniprot storage everywhere
     "vue-router": "^4.0.0-0",
     "vue-worker": "^1.2.1",
     "vuex": "^4.0.0-0",
@@ -38,6 +45,10 @@
     "eslint": "^6.7.2",
     "eslint-loader": "^2.2.1",
     "eslint-plugin-vue": "^7.0.0-0",
+<<<<<<< HEAD
+=======
+    "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.1.2",
+>>>>>>> f7eebe4... uniprot storage everywhere
     "typescript": "~3.9.3",
     "worker-loader": "^3.0.8",
     "worker-plugin": "^5.0.0"
