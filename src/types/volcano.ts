@@ -25,6 +25,7 @@ interface PointData{
     name: string; 
     GO: GOData[]; 
     taxid: number; 
+    unigoGO: UnigoGOObject[]; 
 
 }
 
@@ -41,9 +42,20 @@ interface GOIndexed{
     [go_id: string] : GOObject
 }
 
-interface GOObject{
-    go: GOData
+export interface GOObject{
+    go: UnigoGOObject
     proteins: string[]
+}
+
+
+export interface UnigoGOObject{
+    go:string; 
+    ns: string;
+    name: string;  
+}
+
+export interface SelectionInterface {
+    name: string
 }
 
 export{ Points, PlotData, transform, PointData, GOData, GOIndexed};

@@ -2,103 +2,50 @@
  See tricks : https://learnvue.co/2020/01/how-to-add-drag-and-drop-to-your-vuejs-project/
 */
 <template>
-   <h1 class="title"> XML Loader II</h1>
+
    <div class="flex">
-    <DragAndDrop class="w-full"
-    @xml-load="loadDroppedFile"
-    @xls-drop="xlsDropped=true"
-    />
-    <!--<InputFile/>-->
-   </div>
-   <button class="bg-gray-300 p-2 hover:bg-gray-400 ml-3" @click="loadExample"> Load an example </button>
-   <Loader v-if="xlsDropped" message="Data are loading..."/>
-   <Loader v-if="loaded && !uniprotDBFilled" message="Uniprot data are stored..."/>
-    <div 
-    v-if="loaded && uniprotDBFilled && !xlsDropped"
-    >
-        <div 
-            class="flex flex-col"
-        >
-            <div class="w-auto bg-light bg-opacity-50 p-3 m-2 mb-3 border-2 border-black border-opacity-100">
-                <div
+       
+        <DragAndDrop class="p-3 w-9/10"
+        @xml-load="loadDroppedFile"
+        @xls-drop="xlsDropped=true"
+        />
+        <!--<InputFile/>-->
+        <Button class="p-button-link w-1/10" @click="loadExample" label="Load example"/>
+    </div>
+   <Loader class="p-mt-2" v-if="xlsDropped" message="Data are loading..."/>
+   <Loader class="p-mt-2" v-if="loaded && !uniprotDBFilled" message="Uniprot data are stored..."/>
+    <div v-if="loaded && uniprotDBFilled && !xlsDropped" class="mt-5">
+        
+        <div class="border border-primary p-3">
+            <div
                 class="font-semibold mb-2"
                 v-for="sTitle in headers"
                 :key="sTitle"
-                >
-                    {{sTitle}}
-                </div>
-                <p> {{dimensions[0] - 1}} proteins</p>
-                <p>
-                    {{selectedCol.length}} selected columns for data exploration {{defaultColSelectionStr}}
-                </p>
+            >
+                {{sTitle}}
             </div>
-        </div>
-        <div class="overflow-auto">
-        <table class="w-auto">
-            <thead>
-                <tr> 
-                    <th 
-                    v-for="m in dimensions[1]" 
-                    :key="m" 
-                    class="checkbox"
-                    :style="{ 'background-color': selectedCol.includes(m - 1) ? 'thistle' : ''}"> 
-                        <input type="checkbox" @click="addToSelection(m - 1)" :checked="selectedCol.includes(m-1)" /> 
-                    </th>
-                </tr>
-                <tr>
-                    <th 
-                    class="relative p-2 cell" 
-                    v-for="m in dimensions[1]" 
-                    :key="m" 
-                    :style="{ 'background-color': selectedCol.includes(m - 1) ? 'thistle' : ''}"
-                    > 
-                        <div class="cell-content-div"
-                        :style="{width: savedWidths[m-1] + 'px'}"
-                        >
-                          
-                            <p 
-                            class="cell-content cursor-pointer"
-                            >
-                            
-                                {{cell(0,m-1)}}
-                            </p>
-                    </div>
-                    <div class="resize-cursor" @mousedown="resizeOnMouseDown($event, m)"></div>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr
-                v-for="n in paginationRange"
-                :key="n"
-                >
-                    <td
-                    class="relative p-2"
-                    v-for="m in dimensions[1]"
-                    :key="m"
-                    :style="{ 'background-color': selectedCol.includes(m - 1) ? 'thistle' : ''}"
-                    >
-                        <div class="cell-content-div"
-                            >
-                            <p 
-                            class="cell-content">
-                                {{cell(n+1,m-1)}}
-                            </p>
-                        </div>
-                        <div class="resize-cursor" @mousedown="resizeOnMouseDown($event, m)"></div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        </div>
-        <div class="flex flex-wrap gap-1 p-1 text-xs">
-            <div class="cursor-pointer p-1 pl-2 pr-2 hover:bg-gray-500" v-for="i in numberOfPages" :key="i" :class="i === currentPage && 'bg-gray-500'" @click="currentPage = i">
-                {{i}}
+            <p> {{jsonData.length}} proteins</p>
+            <p>
+                {{selectedColumns.length}} selected columns
+            </p>
             </div>
-        </div>
-        
-        
-    </div>
+
+    <DataTable :value="jsonData" :paginator="true" :rows="10" :resizableColumns="true" columnResizeMode="expand" showGridlines responsiveLayout="scroll" paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown" :rowsPerPageOptions="[10,20,50]" currentPageReportTemplate="Showing {first} to {last} of {totalRecords}"
+    v-model:filters="filters"
+    >
+        <template #header>
+            <div class="p-d-flex p-jc-between p-ai-center">
+                <MultiSelect :modelValue="selectedColumns" :options="columns" optionLabel="header" @update:modelValue="onSelection"
+                placeholder="Select Columns" :filter="true" class="w-1/2"/>
+                <span class="p-input-icon-left">
+                    <i class="pi pi-search" />
+                    <InputText v-model="filters['global'].value" placeholder="Keyword Search" />
+                </span>
+            </div>
+        </template>
+        <Column v-for="(col, index) of selectedColumns" :field="col.field" :header="col.header" :key="col.field + '_' + index"></Column>
+    </DataTable>
+</div>
 </template>
 
 <script lang="ts">
@@ -108,6 +55,13 @@ import { defineComponent, computed, ref, onMounted, onUnmounted, reactive, watch
 import DragAndDrop from '@/components/DragAndDrop.vue';
 import Loader from '@/components/global/Loader.vue'
 import InputFile from '@/components/InputFile.vue'
+//import FileUpload from 'primevue/fileupload';
+import Button from 'primevue/button'; 
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import MultiSelect from 'primevue/multiselect'; 
+import InputText from 'primevue/inputtext';
+import {FilterMatchMode} from 'primevue/api';
 import XLSX  from 'xlsx';
 import { useStore } from 'vuex'
 
@@ -115,37 +69,31 @@ import { logDB } from '../utilities/uniprot-storage';
 const UniprotDatabase = logDB(); 
 import { range } from '../utilities/basic_functions'
 
+interface ColTemplate{
+    field: string; 
+    header: string; 
+    idx: number; 
+}
+
 export default defineComponent({
-    components : { DragAndDrop, Loader, InputFile },
-    setup(){
+    components : { DragAndDrop, Loader, InputFile, Button, DataTable, Column, MultiSelect, InputText },
+    setup(_, { emit }){
+        
         const store = useStore()
 
-        const curCol = ref(0)
-        const pageX = ref(0); 
         const loaded = ref(false);
-        const defaultColSelectionStr = ref('(default selection : columns with Abundance Ratio)'); 
-        const numberPerPage = 10; 
-        const currentPage = ref(1); 
         const xlsDropped = ref(false);
         const uniprotDBFilled = ref(false);
 
-        const dimensions: any = computed( () => {
-            return  store.getters.dimensions;
-        });
-        const numberOfPages = computed(() => {
-            return Number.isInteger(dimensions.value[0] / numberPerPage) ? dimensions.value[0] / numberPerPage : Math.trunc(dimensions.value[0] / numberPerPage) + 1 ; 
-        })
-        const paginationRange = computed(() =>  {
-            const firstLine = (currentPage.value - 1) * numberPerPage
-            let lastLine = currentPage.value * numberPerPage
-            if (currentPage.value === numberOfPages.value) lastLine = dimensions.value[0] - 1; 
-            return range(firstLine, lastLine); 
-            
-        })
+        const columns: Ref<ColTemplate[]> = ref([]); //TO DO : typing
+        const jsonData = ref([]) // TO DO : typing
+        const selectedColumns: Ref<ColTemplate[]> = ref([]); 
 
-        const wsHead = computed(()=>{ return store.getters.test})
-        const name = computed(() => store.state.count);
-        const selectedCol = computed(() => store.state.selectedCol)
+        const filters = ref(
+            {'global': { value: null, matchMode:FilterMatchMode.CONTAINS }}
+        ); 
+
+ 
 
         //const active = computed(() => store.state.count);
         const headers = computed( () => {
@@ -153,62 +101,22 @@ export default defineComponent({
             return  store.getters.sheetNames;
         });
 
-        const savedWidths = ref(Array(dimensions.value[1]).fill(''));
-
         const loadDroppedFile = async (dropData: any) => {
-            const workbook = XLSX.read(dropData, {type: 'array'});
-            store.dispatch('initStoreBook', workbook);
-            store.dispatch('selectColByKeyword', 'Abundance Ratio'); 
-         
-            loaded.value = true;    
-            xlsDropped.value = false;     
-            
-            await storeInUniprotDatabase(); 
-            uniprotDBFilled.value = true; 
-
-
-        };
-
-        const cell = (x: number, y: number)=>{
-            //const _ = store.getters.cell(x, y)
-            return store.getters.cell(x, y);
-        };
-        const increment = () => {
-            store.commit('pushUp');
-        };
-
-        const resizeOnMouseDown = (e: any, colNum: number) => {
-            curCol.value = colNum; 
-            pageX.value = e.pageX; 
-            savedWidths.value[colNum - 1] = e.target.previousSibling.offsetWidth; 
-            
-
-        }
-
-        const resizeOnMouseMove = (e: any) => {
-            if(curCol.value){
-                const diffX = e.pageX - pageX.value;  
-                savedWidths.value[curCol.value - 1] = savedWidths.value[curCol.value - 1] + diffX; 
-                pageX.value = e.pageX; 
-            }
-
-        }
-
-        const resizeOnMouseUp = (e: Event) => {
-            curCol.value = 0; 
-            pageX.value = 0; 
-        }
-
-        const addToSelection = (colNum: number) => {
-            store.commit('addToSelection', {colNum, remove : true}); 
-            defaultColSelectionStr.value = '(manual selection)'; 
-        }
-
-        const loadExample = async () => {
+            store.commit('states/mutateXlsDisplayed', false)
             xlsDropped.value = true;
             uniprotDBFilled.value = false; 
             loaded.value = false; 
-            const arrayData =  await fetch('xls/TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins.xlsx')
+ 
+            await storeData(dropData); 
+        };
+
+
+        const loadExample = async () => {
+            store.commit('states/mutateXlsDisplayed', false)
+            xlsDropped.value = true;
+            uniprotDBFilled.value = false; 
+            loaded.value = false; 
+            const arrayData =  await fetch('xls/TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins_test.ods')
                 .then( (response) => {
                     return response.arrayBuffer(); 
                 })
@@ -216,88 +124,68 @@ export default defineComponent({
 
             if (arrayData){
                 const data = new Uint8Array(arrayData);
-                const wb = XLSX.read(data, {type:"array"});
-                store.dispatch('initStoreBook', wb);
-                store.dispatch('selectColByKeyword', 'Abundance Ratio'); 
-                loaded.value = true;
-                xlsDropped.value = false; 
-                //console.log("delete uniprot database")
-                //await UniprotDatabase.clear(); 
-                console.log("fill up uniprot database")
-                await storeInUniprotDatabase(); 
-                console.log("uniprot database filled"); 
-                uniprotDBFilled.value = true; 
-
+                await storeData(data); 
+                
             }
         }
 
-        const storeInUniprotDatabase = (): Promise<number> => {
+        const storeInUniprotDatabase = (): Promise<boolean> => {
             console.log("storeInUniprotDatabase")
             return new Promise((res, rej) => {
                 const uniprotIdList: string[]|undefined = store.getters.getColDataByName("Accession", "string");
                 if (uniprotIdList){
                     UniprotDatabase.add(uniprotIdList)
-                        .then((nbAdd:number) => res(nbAdd))
+                        .then(() => res(true))
                         .catch(err => rej(err))
                 }
                 else rej(Error("Can't fill up uniprot database. No uniprot ids"))
             })
         }
 
-        onMounted(()=>{
-            ////console.log("mounted xmlLoader"); 
-            window.addEventListener('mousemove', resizeOnMouseMove)
-            window.addEventListener('mouseup', resizeOnMouseUp)
-            /*setTimeout(async() => {
-                //////console.log("trying to fecth")
-                const arrayData = await fetch(
-                    'xls/TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins.xlsx'
-                    )//'../TMT-donées brutes_Results_20-0609-0618_VegetativeExp_V2_proteins.xlsx')//fetch("../TMT-donées brutes_dev.xlsx")
-                    .then( (response) =>{
-                        //////console.log(response.status);
-                        //////console.log("success");
-                    return response.arrayBuffer();
+        const onSelection = (val: ColTemplate[]) => {
+            console.log("add", val)
+            selectedColumns.value = columns.value.filter(col => val.includes(col))
+            store.commit('mutateSelectedCols', val.map(col => col.idx))
+        }
+
+        const storeData = async (data: any) => {
+            const wb = XLSX.read(data, {type:"array"});
+                store.dispatch('initStoreBook', wb);
+                //store.dispatch('selectColByKeyword', 'Abundance Ratio'); 
+                xlsDropped.value = false; 
+                loaded.value = true;
+
+                await storeInUniprotDatabase(); 
+                uniprotDBFilled.value = true; 
+
+                const headers = store.getters.currentSheetHeaders
+                const col: ColTemplate[] = headers.map((header:string, index:number) => {return {field: header.replace(/\./g, ''), header: header, idx: index}})
+                columns.value = col
+                const _ = store.getters.json
+                const _jsonData = [] as any
+                _.forEach((row: any) => {
+                    let newRow = {} as any
+                    Object.keys(row).forEach((key: string) => {
+                        const newKey = key.replace(/\./g, ''); 
+                        newRow[newKey] = row[key]
                     })
-                    .catch(()=>console.error("No XLS found"));
-                if(arrayData) {
-                    //////console.log("OUOUH");
-                    //////console.log(arrayData); 
-                    const data = new Uint8Array(arrayData);
-                    const wb = XLSX.read(data, {type:"array"});
-                    store.dispatch('initStoreBook', wb);
-                    store.dispatch('selectColByKeyword', 'Abundance Ratio'); 
-                    loaded.value = true;
-                    const uniprotIdList: string[]|undefined = store.getters.getColDataByName("Accession", "string");
-                    if (uniprotIdList) {
-                        ////console.log(`Trying to load ${uniprotIdList.length} elements`);
-                        try{
-                            const n = await UniprotDatabase.add(uniprotIdList);
-                            console.log(`${n} additions OK`);
+                    _jsonData.push(newRow)
+                })
+                jsonData.value = _jsonData; 
+                const selectedCols = col.filter((colElmt:any) => (colElmt.field.includes('Abundance Ratio') && ! colElmt.field.includes("Variability")) || colElmt.field === "Accession"); 
+                
+                selectedColumns.value = selectedCols
+                store.commit('mutateSelectedCols', selectedCols.map(col => col.idx))
+            
+                store.commit('states/mutateXlsDisplayed', true)
+        }
 
-                        }catch(e){
-                            console.log("ERROR")
-                            throw(e);
-                        }                       
-                        await UniprotDatabase.readAll();
-                        const d = await UniprotDatabase.get("P00961");
-                        //console.dir(d);
-                    }
-                    //////console.log(store.getters.json);
-                }
-            }
-            , 1000);*/
-        })
-
-        onUnmounted(() => {
-            window.removeEventListener("mousemove", resizeOnMouseMove)
-            window.removeEventListener('mouseup', resizeOnMouseUp)
-        })
-        return { loadDroppedFile, name, wsHead, increment, loaded, headers, dimensions, cell, resizeOnMouseDown, curCol, pageX, savedWidths, addToSelection, selectedCol, defaultColSelectionStr, paginationRange, numberOfPages, currentPage, xlsDropped, loadExample, uniprotDBFilled};
+        return { loadDroppedFile, loadExample, xlsDropped, loaded, uniprotDBFilled, jsonData, selectedColumns, columns, onSelection, headers, filters };
     }
 });
 </script>
 
-<style>
+<style scoped>
 
 table, th, td{
     border:1px solid black; 
@@ -378,6 +266,10 @@ table, th, td{
     display:flex;
     height:100%; 
     margin:auto 0px; 
+}
+
+.test{
+    width:100%; 
 }
 
 

@@ -3,43 +3,39 @@
   <Loader v-if="!uniprotLoaded && !uniprotError" message="Uniprot data are loading..."/>
   <Error v-if="uniprotError" message="Can't retrieve uniprot data"/>
   <Warning v-if="!taxid && !uniprotError && uniprotLoaded" message="More than 1 taxid in your protein data. Impossible to compute ORA."/>
-  <div class="relative">
-      <div v-if="volcanoDisabled" class="disabled"/>
-      <div v-if="uniprotLoaded">
-        <h1>This is a Plot!!</h1>
-        Choose data records 
-        <button v-if="canDraw"
-        class="p-1 rounded bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50"
-        @click="draw()"
-        >PLOT IT</button>
-        <div v-if="selectable" class="overflow-y-scroll max-h-24 bg-gray-300">
-          <div 
-          v-for="column in availableData" 
-          :key="column" 
-          v-text="column"
-          @click="select(column)"
-          :class="{ active: isSelected(column) }"
-          ></div>
-        </div>
-        <div>
+      <!--<Listbox v-model="selected" :options="availableData" :multiple="true" :filter="true" filterPlaceholder="Search" listStyle="max-height:250px" optionLabel="name">
+      <template #header>
+        <p class="pl-3 pt-3 text-xl font-semibold"> Choose data records to display (x and y axes) </p>
+      </template>
+      </Listbox>
+      <Button class="w-full mt-2" label="Plot" :disabled="!canDraw" @click="draw"/>-->
+    <AddPlot :data="availableData" @new-plot="drawNewPlot"/>
+    <div v-for="(plotData, key) in plotsData" :key="key">
+      {{plotData.xLabel}}
+      {{plotData.yLabel}}
+      <Volcano :data="plotData" :taxid="taxid" :plotNumber="key"/>
+    </div> 
+    <!--<div>
+        <OpenableWarnMessage class="mt-2" v-if="volcanoDrawed && nanProt.length >= 1" :header="nanProt.length + ' proteins with no data'" :contentTab="nanProt" content="These proteins don't have data : "/>
+        <div class="flex">
           <Volcano 
-            :data="plotData" 
-            @volcano-drawed="volcanoDrawed=true"
-            @prot-selection-change="saveSelectedProtId"/>
+              :data="plotData" 
+              :taxid="taxid"
+              @volcano-drawed="volcanoDrawed=true"
+              @prot-selection-change="saveSelectedProtId"/>
         </div>
     </div>
-  </div>
   <ComputeORA v-if="volcanoDrawed && taxid"
           @disable-volcano="volcanoDisabled=true"
           @enable-volcano="volcanoDisabled=false"
           :taxid="taxid"
           :selectedProts="selectedProts"
-          />
+          />-->
 </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref, Ref, reactive, onMounted, onUnmounted, onUpdated } from 'vue';
+import { defineComponent, computed, ref, Ref, reactive, onMounted, ComputedRef } from 'vue';
 import { useStore, mapGetters } from 'vuex'
 //import Sliders from '@/components/Sliders.vue';
 import Volcano from '@/components/Volcano.vue';
@@ -49,15 +45,22 @@ import Error from '@/components/global/Error.vue';
 import Loader from '@/components/global/Loader.vue'; 
 import Warning from '@/components/global/Warning.vue'; 
 import ComputeORA from '@/components/ComputeORA.vue'
+import Listbox from 'primevue/listbox';
+import Button from 'primevue/button';
+import OpenableWarnMessage from '@/components/global/OpenableWarnMessage.vue'
+import AddPlot from '@/components/AddPlot.vue'
+
+
 import { toggle } from '../utilities/Arrays';
 //import protToGoWorker from '@/workers/prot_to_go_worker'; 
 import { logDB } from '../utilities/uniprot-storage';
 const UniprotDatabase = logDB(); 
 import * as t from '../types/volcano';
+
 export default defineComponent({
 
 
-  components: { /*Sliders,*/ Volcano, ProteinsList, GoList, Error, Loader, ComputeORA, Warning },
+  components: { /*Sliders,*/ Volcano, ProteinsList, GoList, Error, Loader, ComputeORA, Warning, Listbox, Button, OpenableWarnMessage, AddPlot },
 
   setup() {
 
@@ -67,6 +70,8 @@ export default defineComponent({
     const store = useStore();
     const plotData: t.PlotData = reactive({xLabel : '', yLabel: '', points: []}) 
 
+    const plotsData: Ref<t.PlotData[]> = ref([])
+
     const transformation = ref("none"); 
 
 
@@ -74,44 +79,64 @@ export default defineComponent({
     const volcanoDisabled = ref(false); 
 
     const selectable = computed( () => store.getters.getActiveSheet != null );
-    const selected = ref(new Array<string>());
+    const selected: Ref<t.SelectionInterface[]> = ref([]);
     const select = (field: string) => {
           const _ = toggle(selected.value, field);
           selected.value = _.length <= 2 ? _ : _.slice(-2) ;
         };
 
-    const isSelected = (field: string) => selected.value.includes(field);
+    //const isSelected = (field: string) => selected.value.includes(field);
 
-    const availableData = computed( () => store.getters.getSelectedHeaders);
-
+    const availableData: ComputedRef<t.SelectionInterface[]> = computed( () => store.getters.getSelectedHeaders.map((header:string) => { return { name : header }}));
     const canDraw = computed(() => selected.value.length === 2);
 
     let uniprotData: t.PointData[] = [];
     const taxidWarning: Ref<Set<number>> = ref(new Set()); 
     const taxid: Ref<number> = ref(0); 
     const selectedProts : Ref<string[]> = ref([]); 
+
+    const nanProt: Ref<String[]> = ref([])
     
     const draw = () => {
       if(canDraw.value) {
         volcanoDisabled.value = false; 
         //console.log("lets draw");
         ////console.log(canDraw.value);
-        const x_list = store.getters.getColDataByName(selected.value[0], 'number')
-        const y_list = store.getters.getColDataByName(selected.value[1], 'number')
+        const x_list = store.getters.getColDataByName(selected.value[0].name, 'number')
+        const y_list = store.getters.getColDataByName(selected.value[1].name, 'number')
         
         const points = x_list.map((e: number, i: number) => ({
                 x:e, 
                 y: y_list[i], // aka 'none'
                 d: uniprotData[i]
           }))
-          .filter((point: t.Points) => !isNaN(point.x));
 
-        plotData.xLabel = selected.value[0];
-        plotData.yLabel = selected.value[1];
-        plotData.points = points; 
+        nanProt.value = points.filter((point: t.Points) => isNaN(point.x)).map((point : t.Points) => point.d.id); 
+
+        plotData.xLabel = selected.value[0].name;
+        plotData.yLabel = selected.value[1].name;
+        plotData.points = points.filter((point: t.Points) => !isNaN(point.x));; 
 
 
       }
+    }
+
+    const drawTest = (xAxis : string, yAxis: string) => {
+
+      //TO DO : HANDLE ALL NaN STUFF
+
+      const x_list = store.getters.getColDataByName(xAxis, 'number')
+      const y_list = store.getters.getColDataByName(yAxis, 'number')
+      const points: t.Points[] = x_list.map((e: number, i: number) => ({
+                x:e, 
+                y: y_list[i],
+                d: uniprotData[i]
+      }))
+      //nanProt.value = points.filter((point: t.Points) => isNaN(point.x)).map((point : t.Points) => point.d.id); 
+      const newPlotData = {xLabel : xAxis, yLabel: yAxis, points : points.filter(point => !(isNaN(point.x)|| isNaN(point.y)))}
+      console.log("data", newPlotData); 
+      plotsData.value.push(newPlotData); 
+
     }
 
     const getProtData = async (): Promise<t.PointData[]> => {      
@@ -141,6 +166,10 @@ export default defineComponent({
       selectedProts.value = protData.map(prot => prot.d.id); 
     }
 
+    const drawNewPlot = (xAxis: string, yAxis: string) => {
+      drawTest(xAxis, yAxis)
+    }
+
    onMounted(() => {
         console.log("DataExplore onMounted")
         // the DOM element will be assigned to the ref after initial render
@@ -149,7 +178,6 @@ export default defineComponent({
         getProtData()
           .then((values) => {
             console.log("prot data loaded")
-            
             uniprotData = values
             checkTaxidProtData()
               .then((taxids_resp: Set<number>) => {
@@ -171,7 +199,7 @@ export default defineComponent({
         
     });
 
-    return {canDraw, draw, availableData, selectable, selected, select, isSelected, plotData, transformation, uniprotLoaded, uniprotError, volcanoDisabled, volcanoDrawed, taxidWarning, taxid, saveSelectedProtId, selectedProts} ;
+    return {canDraw, draw, availableData, selectable, selected, select, plotData, transformation, uniprotLoaded, uniprotError, volcanoDisabled, volcanoDrawed, taxidWarning, taxid, saveSelectedProtId, selectedProts, nanProt, drawNewPlot, plotsData} ;
   }
 
 

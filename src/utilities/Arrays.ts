@@ -10,4 +10,10 @@ const toggle = (arr: any, item: any, getValue = (item: any) => item) => {
   return removeAtIndex(arr, index);
 };
 
+export const copyArrayOfObjects = (arr: Object[]): Object[] => {
+  const clonedArray: Object[] = []; 
+  arr.forEach(val => clonedArray.push(Object.assign({}, val)))
+  return clonedArray
+} 
+
 export { toggle };

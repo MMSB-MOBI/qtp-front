@@ -1,6 +1,6 @@
 <template>
-  <div class="home">
-   <h1> Manipulating XLS Record </h1>
+  <div class="root">
+   <p class="text-xl font-medium m-2"> Load your data </p>
    <XmlLoader />
    <!--
     <img alt="Vue logo" src="../assets/logo.png">
@@ -24,3 +24,9 @@ export default defineComponent({
   }
 });
 </script>
+
+<style scoped>
+.root{
+  text-align:center; 
+}
+</style>

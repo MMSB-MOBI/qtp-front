@@ -1,33 +1,30 @@
 <template>
-<div class="m-2">
-    <Button :disabled="computationLaunched"
-    @click="launchComputation"> 
-        Compute ORA on selected proteins
-    </Button>
-    
-    <div v-if="computationLaunched" class="bg-gray-100">
+<div class="datatable">
+    <Button label="Compute pathways significance" :disabled="computationLaunched && !refresh" @click="launchComputation"/>
+    <div v-if="computationLaunched && !refresh" class="bg-gray-100">
         <Loader v-if="!resultsLoaded" message="ORA under computation..."/>
         <div v-if="resultsLoaded">
             <div v-if="Object.keys(ORAResultsList).length === 0"> No GO terms with significative p-value {{pvalue}} </div>
             <div v-else> 
-                <DataTable :value="ORAResultsList" class="p-datatable-sm" sortField="pvalue" :sortOrder="1" :scrollable="true">
+                <DataTable :value="ORAResultsList" class="datatable p-datatable-sm h-full" sortField="pvalue" :sortOrder="1" :scrollable="true" scrollHeight="500px" v-model:selection="selectedRow" selectionMode="multiple" :metaKeySelection="false"
+                @rowSelect="clickRow" @rowUnselect="clickRow">
                     <template #header>
                         <p class="text-lg">{{ORAResultsList.length}} GO terms with p-value &lt; {{pvalue}} </p>
                     </template>
                     <Column field="go" header="GO Term" :sortable="true"/>
                     <Column field="name" header="Name" :sortable="true"/>
                     <Column field="pvalue" header="P-value" :sortable="true"/>
+                    <Column field="ns" header="NS" :sortable="true"/>
                 </DataTable>
             </div>
         </div>
     </div>
-    
 </div>
 </template>
 
 <script lang="ts">
 
-import { defineComponent, ref, PropType } from 'vue'; 
+import { defineComponent, ref, PropType, onMounted, onUpdated, Ref, toRefs, watch } from 'vue'; 
 import { useStore } from 'vuex';
 
 import { PwasAPIInput } from '../types/ora'
@@ -50,6 +47,14 @@ export default defineComponent({
         selectedProts: {
             type: Array as PropType<string[]>,
             default:[]
+        },
+        allProts : {
+            type : Array as PropType<string[]>, 
+            default:[]
+        }, 
+        refresh : {
+            type: Boolean as PropType<boolean>,
+            default: false
         }
     },
 
@@ -57,25 +62,26 @@ export default defineComponent({
 
         const resultsLoaded = ref(false); 
         const computationLaunched = ref(false); 
-        const ORAResultsList = ref({}); 
-        const store = useStore(); 
-        const pvalue = 0.5
+        const ORAResultsList: Ref<any[]> = ref([]); //TO DO TYPING
+        const pvalue = 0.1
+        const method = "fisher"; 
+        const selectedRow: Ref<any[]> = ref([]); 
+        const refresh = toRefs(props).refresh
+
 
         const launchComputation = async () => {
+            resultsLoaded.value = false; 
             computationLaunched.value = true; 
-            emit('disable-volcano')
-            
-            const method = "fisher"; 
-            const expAccessions = store.getters.getColDataByName("Accession", 'string')
+            //refresh.value = false; 
+            emit('disable-go')
             const apiInput: PwasAPIInput = {
-                proteinsExp : expAccessions,
+                proteinsExp : props.allProts,
                 proteinsDelta : props.selectedProts, 
                 method: method, 
                 taxid: props.taxid, 
                 pvalue: pvalue
             }
-
-            console.log("pwas input", apiInput)
+            console.log("oraInput", apiInput); 
             fetch(`/api/pwas/ora`, {
                 method: 'POST',
                 body: JSON.stringify(apiInput),
@@ -84,12 +90,9 @@ export default defineComponent({
                 'Content-Type': 'application/json'
             }}).then(async (response) => {
                 const responseData = await response.json()
-                ORAResultsList.value = responseData.fusedNS.list
+                ORAResultsList.value = fuseResultsList(responseData)
                 resultsLoaded.value = true; 
-                console.log("END")
-            })
-            
-            
+            }) 
         }
 
         const closeResults = () => {
@@ -99,8 +102,27 @@ export default defineComponent({
             emit('enable-volcano')
         }
 
+        const clickRow = () => {
+            emit('click-on-go', selectedRow.value.map(row => row.go))
+        }
+
+        const fuseResultsList = (data:any): any[] => {
+
+            let fused:any[] = []; 
+            Object.values(data).forEach((val:any) => {
+                fused = [...fused, ...val["list"]]
+            })
+            return fused; 
+
+        }
+
+        //watch(refresh, (newData) => {
+        //    console.log("watch refresh", newData); 
+        //    computationLaunched.value = false; 
+        //})
+        
     
-    return { launchComputation, resultsLoaded, computationLaunched, closeResults, ORAResultsList, pvalue}
+    return { launchComputation, resultsLoaded, computationLaunched, closeResults, ORAResultsList, pvalue, selectedRow, clickRow}
 
     }
 
@@ -108,7 +130,7 @@ export default defineComponent({
 
 </script>
 
-<style scoped>
+<style>
 .close{
   cursor: pointer;
   color: #aaa;
@@ -116,4 +138,9 @@ export default defineComponent({
   font-size: 28px;
   font-weight: bold;
 }
+
+.datatable{
+    height:500px; 
+}
+
 </style>

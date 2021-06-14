@@ -1,6 +1,39 @@
-/* ./src/index.css */
-
-/*! @import */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root{
+    --primary-50:#6e3dc2;
+    --primary-10:#e2d8f3; 
+    --primary-20: #c5b1e7; 
+}
+
+.list-item:hover{
+    background-color:var(--surface-200); 
+}
+
+.list-item.selected{
+    color: #673AB7;
+    background: rgba(103, 58, 183, 0.12); 
+}
+
+.select-list{
+    height:500px; 
+    border:solid var(--surface-400); 
+    border-width:1px; 
+    border-radius:5px; 
+    overflow-x:hidden; 
+}
+
+.p-listbox .p-listbox-list .p-listbox-item{
+    padding:0;
+    padding-left:0.5rem; 
+}
+
+.p-listbox .p-listbox-header .p-listbox-filter{
+    height: 1rem; 
+}
+
+.p-listbox .p-listbox-header{
+    padding : 0 0.5rem 0.5rem
+}

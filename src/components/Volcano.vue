@@ -28,9 +28,24 @@
             <div v-if="volcanoDrawed" class="flex w-full mt-2 flex-col">
                 <div class="flex gap-4">
                 <!-- prot list -->
-                    <ProteinsList :points="filteredByPannelPoints" class="flex-grow-0 w-full"/>
+                    <ProteinsList :points="filteredByPannelPoints" class="w-1/3" @click-on-prot="highlighFromProt"/>
                     <!-- go list -->
-                    <GoList class="flex-grow-0 w-full" :go="goSelected"/>
+                    <div class="flex w-2/3 gap-2">
+                        <div :class="goPartWidth.list">
+                            <Loader v-if="!goLoaded" :class="goPartWidth.list" message="GO terms are loading..."/>
+                            <GoList v-else :go="goSelected" :disabled="goDisabled" @click-on-go="highlightFromGo"/>
+                        </div>
+                        <PathwayStats 
+                            :class="goPartWidth.stats"
+                            :selectedProts="filteredByPannelPoints.map(point => point.d.id)"
+                            :allProts="allPoints.map(point => point.d.id)"
+                            :taxid="taxid"
+                            @disable-go="disableGO"
+                            :refresh="triggerStatsRefresh"
+                            @click-on-go="highlightFromGo"/>
+                    </div>
+
+
                 </div>                
             </div>
 
@@ -42,11 +57,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, ref, toRefs, Ref, watch, onMounted, computed, onUnmounted } from 'vue'; 
+import { defineComponent, PropType, ref, toRefs, Ref, watch, onMounted, computed, onUnmounted, reactive, ComputedRef } from 'vue'; 
 
 import * as d3 from "d3";
 
-import { PlotData, Points, transform, GOIndexed } from '../types/volcano';
+import { PlotData, Points, transform, GOObject } from '../types/volcano';
 
 import {useStore} from 'vuex'
 
@@ -59,9 +74,11 @@ import Error from '@/components/global/Error.vue';
 import Loader from '@/components/global/Loader.vue'; 
 import ProteinsList from '@/components/ProteinsList.vue'
 import GoList from '@/components/GoList.vue'
+import PathwayStats from '@/components/PathwayStats.vue'
+import Button from 'primevue/button'
 
 export default defineComponent({
-    components : { Error, ProteinsList, GoList, Loader }, 
+    components : { Error, ProteinsList, GoList, Loader, PathwayStats, Button }, 
 
     props: {
         data: {
@@ -86,24 +103,33 @@ export default defineComponent({
         disabled: {
             type: Boolean as PropType<boolean>,
             default: false
+        },
+        taxid : {
+            type: Number as PropType<number>,
+            default: 0
+        }, 
+        plotNumber : {
+            type : Number as PropType<number>, 
+            default : 0
         }
     },
 
     setup(props, {emit}){
-
+        
+        const data = toRefs(props).data 
         const protToGoWorker = new Worker('@/workers/protToGoWorker.ts', {type: 'module'})
         //ATTRIBUTES
         const error = ref(false); 
-        const svgRoot: Ref<SVGSVGElement|null> = ref(null);
+        const svgRoot: Ref<SVGSVGElement|null> = ref(null)
         const transformy: Ref<transform> = ref("none"); 
         const volcano: Ref<VolcanoPlot|null> = ref(null); //Save the volcano object
         const volcanoDrawed = ref(false); 
         const filteredByPannelPoints: Ref<Points[]> = ref([])
-        const goSelected : Ref<GOIndexed> = ref({})
+        const goSelected : Ref<GOObject[]> = ref([])
         const goLoaded = ref(false); 
         const store = useStore();
 
-        const allPoints = computed(() => {
+        const allPoints: ComputedRef<Points[]> = computed(() => {
             const points = props.data.points.map(point => ({
                 x: point.x, 
                 y: transformy.value == '-log10' ? (-1)*Math.log10(point.y)
@@ -111,23 +137,28 @@ export default defineComponent({
                                           : point.y, // aka 'none'
                 d : point.d
             }))
-            store.commit("proteinSelection/initAllPoints", points)
+            //store.commit("proteinSelection/initAllPoints", points)
             return points
         });
+
+        const statsComputed: Ref<boolean> = ref(false); 
+        const goDisabled: Ref<boolean> = ref(false); 
+
+        const goPartWidth = reactive({'list' : 'w-3/4', 'stats': 'w-1/4'})
+        const triggerStatsRefresh = ref(false); 
 
         //METHODS
 
         const draw = async(data : PlotData) => {
             erase(); 
-
+            //console.log("draw plot")
             const layerUI = new ActiveLayers(svgRoot.value as SVGSVGElement);
             const axis = new Axis(svgRoot.value as SVGSVGElement,
                                   props.height, props.width,
                                   transformy.value != "none" ? transformy.value : undefined );
-
+            //console.log(data.xLabel, data.yLabel); 
             axis.draw(allPoints.value, data.xLabel, data.yLabel);
             layerUI.activeArea = axis.getActiveCorners();
-            
             volcano.value = new VolcanoPlot(svgRoot.value as SVGSVGElement,
                                   axis.xScale,
                                   axis.yScale,
@@ -190,14 +221,24 @@ export default defineComponent({
         }
 
         const removeFilterPoints = (predicateFn: (point: Points) => boolean) => {
-            filteredByPannelPoints.value = filteredByPannelPoints.value.filter(point => !predicateFn(point))
-            emit("prot-selection-change", filteredByPannelPoints.value)
+            const newPoints = filteredByPannelPoints.value.filter(point => !predicateFn(point))
+            filterPointsAction(newPoints); 
+            
         }
 
-        const addFilterPoints = (predicateFn: (point:Points) => boolean) => {
-            filteredByPannelPoints.value = filteredByPannelPoints.value.concat(allPoints.value.filter(point => predicateFn(point)))
-            emit("prot-selection-change", filteredByPannelPoints.value)
 
+        const addFilterPoints = (predicateFn: (point:Points) => boolean) => {
+            const newPoints = filteredByPannelPoints.value.concat(allPoints.value.filter(point => predicateFn(point)))
+            filterPointsAction(newPoints); 
+        }
+
+        const filterPointsAction = (newPoints : Points[]) => {
+            if((newPoints.length !== filteredByPannelPoints.value.length) && goDisabled.value){
+                triggerStatsRefresh.value = true; 
+                enableGO(); 
+            }
+            filteredByPannelPoints.value = newPoints
+            emit("prot-selection-change", filteredByPannelPoints.value)
         }
     
 
@@ -219,9 +260,56 @@ export default defineComponent({
             }
         })
 
+        const disableGO = () => {
+            goDisabled.value = true; 
+            goPartWidth.list = 'w-1/5'
+            goPartWidth.stats = 'w-4/5'
+            triggerStatsRefresh.value = false; 
+        }
+
+        const enableGO = () => {
+            goDisabled.value = false; 
+            goPartWidth.list = 'w-3/4'
+            goPartWidth.stats = 'w-1/4'
+        }
+
+        const filterPoints = (predicate:(point:Points)=>boolean) => {
+            return allPoints.value.filter(point => predicate(point))
+        }
+
+        const highlightPoints = (svgPoints:any[]) => { //TO DO : type svg ? 
+            //Get svg points from prot ids
+            const volcano_plot = volcano.value as VolcanoPlot
+            volcano_plot.redrawCircle(svgPoints); 
+        } 
+
+        const highlighFromProt = (selectedProteins: string[]) => {
+            const predicateFn = (point:Points) => {
+                if (selectedProteins.includes(point.d.id)) return true
+                else return false
+            }
+            const filteredPoints = filterPoints(predicateFn)
+            highlightPoints(filteredPoints.map(p => p.svg))
+        }
+
+        const highlightFromGo = (selectedGO : string[]) => {
+            console.log("highlightFromGo", selectedGO); 
+            const predicateFn = (point: Points) => {
+                const pointGO = point.d.unigoGO.map(go => go.go)
+                const intersect = selectedGO.filter(go_id => pointGO.includes(go_id))
+                if (intersect.length === 0) return false
+                else return true
+            }
+
+            const filteredPoints = filterPoints(predicateFn)
+            console.log("filter", filteredPoints);
+            highlightPoints(filteredPoints.map(p => p.svg))
+        }
+
 
         //WATCHERS 
         watch( (props.data), async (newData) =>{
+            console.log("data change"); 
             await draw(newData);          
         });
 
@@ -230,20 +318,24 @@ export default defineComponent({
         });
 
         watch ( (filteredByPannelPoints), () => {
-            console.log("GO transform")
-            //goLoaded.value = false; 
+            goLoaded.value = false; 
             const serializedData = JSON.parse(JSON.stringify(filteredByPannelPoints.value.map(p => p.d)))
             protToGoWorker.postMessage(serializedData);
         })
 
         onMounted( () => {
+            console.log("Volcano mounted")
+            //console.log(svgRoot.value)
+            console.log(data.value.xLabel)
             d3.select(svgRoot.value)
             .attr("height", props.height)
             .attr("width", props.width)
-            .attr("class", "volcano-svg-component");
+            .attr("class", `volcano-svg-component-${props.plotNumber}`);
+
+            draw(data.value); 
 
             protToGoWorker.onmessage = event => {
-                const data = event.data as GOIndexed; 
+                const data = event.data as GOObject[]; 
                 goSelected.value = data
                 goLoaded.value = true; 
             }
@@ -254,7 +346,7 @@ export default defineComponent({
             protToGoWorker.terminate(); 
         })
 
-        return { error, svgRoot, volcanoDrawed, transformy, filteredByPannelPoints, goSelected, goLoaded }
+        return { error, svgRoot, volcanoDrawed, transformy, filteredByPannelPoints, goSelected, goLoaded, statsComputed, goDisabled, goPartWidth, disableGO, allPoints, triggerStatsRefresh, data, highlighFromProt, highlightFromGo }
     }
 
 })

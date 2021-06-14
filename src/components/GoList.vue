@@ -1,60 +1,63 @@
 <template>
-<div class="list p-2 overflow-scroll w-full">
-    <p class="font-bold mb-1"> Filtered GO list ({{Object.keys(go).length}})</p>
-    <ul>
-        <li 
-        class="hover:bg-light cursor-pointer" 
-        v-for="go_obj in go" 
-        :key="go_obj.go.id"
-        @click="clickSelection(go_obj.go.id)"
-        :class="{ 'bg-light': goSelection.includes(go_obj.go.id) }">
-            {{go_obj.go.id}} {{go_obj.go.term}} ({{go_obj.proteins.length}})
-        </li>
-    </ul>
+<div class="relative">
+    <div v-if="disabled" class="disabled"/>
+    <Listbox v-model="goSelection" :options="formattedToDisplay" :multiple="true" @change="clickSelection" listStyle="height:500px" :filter="true" :filterFields="filterFields">
+        <template #header>
+            <div class="font-bold p-2">
+                Selected GO ({{ go.length }})
+            </div>
+        </template>
+        <template #option="slotProps">
+        <div>
+            <span>{{slotProps.option.id}} : {{slotProps.option.name}}</span>
+        </div>
+        </template>
+    </Listbox>
 </div>
 </template>
 
 
 <script lang="ts">
-import { defineComponent, PropType, ref, Ref, toRefs, onUpdated, onMounted, computed } from 'vue';
-import { GOIndexed, Points} from '../types/volcano';
-import { useStore } from 'vuex';
-import { toggle } from '../utilities/Arrays';
+import { defineComponent, PropType, ref, Ref, toRefs, computed } from 'vue';
+import { GOObject } from '../types/volcano';
 
 import Loader from '@/components/global/Loader.vue'
+import Listbox from 'primevue/listbox'
+
+interface GOSelectionInterface{
+    id: string, 
+    name: string, 
+    prots: string[]
+}
 
 export default defineComponent({
-    components : { Loader }, 
+    components : { Loader, Listbox }, 
 
     props: {
         go: {
-            type : Object as PropType<GOIndexed>, 
-            default : {}
+            type : Object as PropType<GOObject[]>, 
+            default : []
+        },
+        disabled: {
+            type: Boolean as PropType<boolean>, 
+            default: false
         }
     }, 
 
-    setup(props){
-        const goSelection: Ref<string[]> = ref([]); 
-        const { go } = toRefs(props)
-        const store = useStore(); 
+    setup(props, {emit}){
+        const goSelection: Ref<GOSelectionInterface[]> = ref([]); 
+        const go = toRefs(props).go
+        const filterFields = ["id", "name"]
 
-        const clickSelection = (goId: string) => {
+        const formattedToDisplay = computed(() => {
+            return go.value.map(goElmt => ({id:goElmt.go.go, name:goElmt.go.name, prots: goElmt.proteins}))
+        })
 
-            goSelection.value = toggle(goSelection.value, goId)
-
-            const filterPredicate = (point: Points): boolean => {
-                const go_point = point.d.GO.map(go => go.id)
-                const intersect = goSelection.value.filter(go_id => go_point.includes(go_id))
-                if (intersect.length === 0) return false
-                else return true
-            }
-
-            store.commit("proteinSelection/filterHighlight", filterPredicate);
+        const clickSelection = () => {
+            emit("click-on-go", goSelection.value.map(go => go.id)); 
         }
 
-        onUpdated(() => console.log("UPDATE GO", go.value))
-
-        return {go, clickSelection, goSelection}
+        return {clickSelection, goSelection, formattedToDisplay, filterFields}
     }
     
     
@@ -62,11 +65,13 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.list{
-    height:500px;
-    border: solid grey; 
-    border-width:1px; 
-    border-radius:5px; 
-    overflow-x:hidden; 
+.disabled{
+    z-index:2; 
+    position:absolute; 
+    width:100%;
+    height:100%;
+    background-color:black;
+    opacity:0.7;  
 }
+
 </style>

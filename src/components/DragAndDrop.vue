@@ -2,16 +2,16 @@
  See tricks : https://learnvue.co/2020/01/how-to-add-drag-and-drop-to-your-vuejs-project/
 */
 <template>
-    <div class="w-auto rounded bg-gray-300 m-2 mb-3 p-2 h-full text-lg font-bold border-2 border-black border-opacity-100"
+    <div class="drag-drop"
     @drop="handleDrop"
     @dragover.prevent
     @dragenter.prevent
     @dragover="dragged=true"
     @dragleave="dragged=false"
-    :class="{ 'bg-gray-500': dragged }">
-        <h1>
-            Drop experience file
-        </h1>
+    :class="{ 'dragged': dragged }">
+        <p>
+            Drag and drop experience file to here to upload.
+        </p>
     </div>
 </template>
 
@@ -55,6 +55,7 @@ export default defineComponent({
             console.log("drop")
             dragged.value = false; 
             e.stopPropagation(); e.preventDefault();
+            console.log(e.dataTransfer); 
             if(e.dataTransfer) 
                 processData(e.dataTransfer)
         };
@@ -67,3 +68,14 @@ export default defineComponent({
     }
 });
 </script>
+
+<style scoped>
+    .drag-drop{
+        border:solid; 
+        border-width:thin; 
+        background-color:var(--primary-10); 
+    }
+    .dragged{
+        background-color:var(--primary-20); 
+    }
+</style>
