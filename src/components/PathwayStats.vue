@@ -34,6 +34,12 @@ import Button from 'primevue/button';
 import DataTable from 'primevue/datatable'; 
 import Column from 'primevue/column';
 
+interface ORAResultsType {
+    go: string;
+    ns: string; 
+    name: string; 
+    pvalue: number; 
+}
 
 export default defineComponent({
 
@@ -62,7 +68,7 @@ export default defineComponent({
 
         const resultsLoaded = ref(false); 
         const computationLaunched = ref(false); 
-        const ORAResultsList: Ref<any[]> = ref([]); //TO DO TYPING
+        const ORAResultsList: Ref<ORAResultsType[]> = ref([]); //TO DO TYPING
         const pvalue = 0.1
         const method = "fisher"; 
         const selectedRow: Ref<any[]> = ref([]); 
@@ -82,6 +88,7 @@ export default defineComponent({
                 pvalue: pvalue
             }
             console.log("oraInput", apiInput); 
+            
             fetch(`/api/pwas/ora`, {
                 method: 'POST',
                 body: JSON.stringify(apiInput),
@@ -90,7 +97,24 @@ export default defineComponent({
                 'Content-Type': 'application/json'
             }}).then(async (response) => {
                 const responseData = await response.json()
-                ORAResultsList.value = fuseResultsList(responseData)
+                let allGoProtsData = {}
+                for (const ns of Object.keys(responseData)){
+                    const requestForProts = { collection : props.taxid, go_members : responseData[ns].map((goElmt: any) => goElmt.ID), ns}
+                    console.log(requestForProts)
+                    const protResponse = await fetch(`/api/pwas/getMembers`, {
+                        method: 'POST',
+                        body : JSON.stringify(requestForProts),
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    const protData = await protResponse.json()
+                    allGoProtsData = {...allGoProtsData, ...protData}
+                }
+                ORAResultsList.value = fuseResultsList(responseData, allGoProtsData)
+
+                
                 resultsLoaded.value = true; 
             }) 
         }
@@ -103,14 +127,14 @@ export default defineComponent({
         }
 
         const clickRow = () => {
-            emit('click-on-go', selectedRow.value.map(row => row.go))
+            emit('click-on-go', selectedRow.value.map(row => row.prots.map((prot:any) => prot)).flat())
         }
 
-        const fuseResultsList = (data:any): any[] => {
+        const fuseResultsList = (data:any, protsData: any): any[] => {
             let fused:any[] = []; 
             Object.entries(data).forEach((val:any) => {
                 const ns = val[0]
-                const listForNs = val[1].map((goObj : any) => ({go: goObj.ID, ns, name: goObj.name, pvalue: goObj.pvalue_annot}))
+                const listForNs = val[1].map((goObj : any) => ({go: goObj.ID, ns, name: goObj.name, pvalue: goObj.pvalue_annot, prots : protsData[goObj.ID]}))
                 fused = [...fused, ...listForNs]
             })
             return fused; 

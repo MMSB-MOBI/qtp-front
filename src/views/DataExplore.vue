@@ -44,7 +44,6 @@ import GoList from '@/components/GoList.vue';
 import Error from '@/components/global/Error.vue'; 
 import Loader from '@/components/global/Loader.vue'; 
 import Warning from '@/components/global/Warning.vue'; 
-import ComputeORA from '@/components/ComputeORA.vue'
 import Listbox from 'primevue/listbox';
 import Button from 'primevue/button';
 import OpenableWarnMessage from '@/components/global/OpenableWarnMessage.vue'
@@ -60,7 +59,7 @@ import * as t from '../types/volcano';
 export default defineComponent({
 
 
-  components: { /*Sliders,*/ Volcano, ProteinsList, GoList, Error, Loader, ComputeORA, Warning, Listbox, Button, OpenableWarnMessage, AddPlot },
+  components: { Volcano, ProteinsList, GoList, Error, Loader, Warning, Listbox, Button, OpenableWarnMessage, AddPlot },
 
   setup() {
 

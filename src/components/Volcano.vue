@@ -31,7 +31,7 @@
             <div v-if="volcanoDrawed" class="flex w-full mt-2 flex-col">
                 <div class="flex gap-4">
                 <!-- prot list -->
-                    <ProteinsList :points="filteredByPannelPoints" class="w-1/3" @click-on-prot="highlighFromProt"/>
+                    <ProteinsList :points="filteredByPannelPoints" class="w-1/3" @click-on-prot="highlightFromProt"/>
                     <!-- go list -->
                     <div class="flex w-2/3 gap-2">
                         <div :class="goPartWidth.list">
@@ -45,7 +45,7 @@
                             :taxid="proteome"
                             @disable-go="disableGO"
                             :refresh="triggerStatsRefresh"
-                            @click-on-go="highlightFromGo"/>
+                            @click-on-go="highlightFromProt"/>
                     </div>
 
 
@@ -295,7 +295,7 @@ export default defineComponent({
             volcano_plot.redrawCircle(svgPoints); 
         } 
 
-        const highlighFromProt = (selectedProteins: string[]) => {
+        const highlightFromProt = (selectedProteins: string[]) => {
             const predicateFn = (point:Points) => {
                 if (selectedProteins.includes(point.d.id)) return true
                 else return false
@@ -358,7 +358,7 @@ export default defineComponent({
             protToGoWorker.terminate(); 
         })
 
-        return { error, svgRoot, volcanoDrawed, transformy, filteredByPannelPoints, goSelected, goLoaded, statsComputed, goDisabled, goPartWidth, disableGO, allPoints, withAnnotationPoints, triggerStatsRefresh, data, highlighFromProt, highlightFromGo, proteome }
+        return { error, svgRoot, volcanoDrawed, transformy, filteredByPannelPoints, goSelected, goLoaded, statsComputed, goDisabled, goPartWidth, disableGO, allPoints, withAnnotationPoints, triggerStatsRefresh, data, highlightFromProt, highlightFromGo, proteome }
     }
 
 })
