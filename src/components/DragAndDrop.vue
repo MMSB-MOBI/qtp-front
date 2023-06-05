@@ -55,7 +55,6 @@ export default defineComponent({
             console.log("drop")
             dragged.value = false; 
             e.stopPropagation(); e.preventDefault();
-            console.log(e.dataTransfer); 
             if(e.dataTransfer) 
                 processData(e.dataTransfer)
         };

@@ -42,7 +42,7 @@
                             :class="goPartWidth.stats"
                             :selectedProts="filteredByPannelPoints.map(point => point.d.id)"
                             :allProts="withAnnotationPoints.map(point => point.d.id)"
-                            :taxid="proteome"
+                            :taxid="proteome.name"
                             @disable-go="disableGO"
                             :refresh="triggerStatsRefresh"
                             @click-on-go="highlightFromProt"/>
@@ -52,7 +52,7 @@
                 </div>                
             </div>
 
-            
+            image.png
 
         </div>
         <Error v-if="error" message="Error with volcano plot>"/>
@@ -184,8 +184,11 @@ export default defineComponent({
                                          axis.getActiveCorners(), 
                                          axis.marginBot.marginOuter);  
 
-            sliderUI.draw();
-            sliderUI.onSlide(() => layerUI.resize(sliderUI));
+            sliderUI.draw(); 
+            sliderUI.onSlide(() => {
+                layerUI.resize(sliderUI)
+                
+            });
 
             selectAllPannels(sliderUI, layerUI, axis.xScale, axis.yScale);
 

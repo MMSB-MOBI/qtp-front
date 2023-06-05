@@ -87,7 +87,7 @@ export default defineComponent({
                 taxid: props.taxid, 
                 pvalue: pvalue
             }
-            console.log("oraInput", apiInput); 
+            //console.log("oraInput", apiInput); 
             
             fetch(`/api/pwas/ora`, {
                 method: 'POST',
@@ -100,7 +100,7 @@ export default defineComponent({
                 let allGoProtsData = {}
                 for (const ns of Object.keys(responseData)){
                     const requestForProts = { collection : props.taxid, go_members : responseData[ns].map((goElmt: any) => goElmt.ID), ns}
-                    console.log(requestForProts)
+                    //console.log(requestForProts)
                     const protResponse = await fetch(`/api/pwas/getMembers`, {
                         method: 'POST',
                         body : JSON.stringify(requestForProts),

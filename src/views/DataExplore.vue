@@ -2,7 +2,6 @@
 <div>
   <Loader v-if="!uniprotLoaded && !uniprotError" message="Uniprot data are loading..."/>
   <Error v-if="uniprotError" message="Can't retrieve uniprot data"/>
-  <Warning v-if="!taxid && !uniprotError && uniprotLoaded" message="More than 1 taxid in your protein data. Impossible to compute ORA."/>
       <!--<Listbox v-model="selected" :options="availableData" :multiple="true" :filter="true" filterPlaceholder="Search" listStyle="max-height:250px" optionLabel="name">
       <template #header>
         <p class="pl-3 pt-3 text-xl font-semibold"> Choose data records to display (x and y axes) </p>
@@ -13,7 +12,7 @@
     <div v-for="(plotData, key) in plotsData" :key="key">
       {{plotData.xLabel}}
       {{plotData.yLabel}}
-      <Volcano :data="plotData" :taxid="taxid" :plotNumber="key"/>
+      <Volcano :data="plotData" :plotNumber="key"/>
     </div> 
     <!--<div>
         <OpenableWarnMessage class="mt-2" v-if="volcanoDrawed && nanProt.length >= 1" :header="nanProt.length + ' proteins with no data'" :contentTab="nanProt" content="These proteins don't have data : "/>
@@ -90,8 +89,8 @@ export default defineComponent({
     const canDraw = computed(() => selected.value.length === 2);
 
     let uniprotData: t.PointData[] = [];
-    const taxidWarning: Ref<Set<number>> = ref(new Set()); 
-    const taxid: Ref<number> = ref(0); 
+    // const taxidWarning: Ref<Set<number>> = ref(new Set()); 
+    // const taxid: Ref<number> = ref(0); 
     const selectedProts : Ref<string[]> = ref([]); 
 
     const nanProt: Ref<String[]> = ref([])
@@ -115,7 +114,7 @@ export default defineComponent({
 
         plotData.xLabel = selected.value[0].name;
         plotData.yLabel = selected.value[1].name;
-        plotData.points = points.filter((point: t.Points) => !isNaN(point.x));; 
+        plotData.points = points.filter((point: t.Points) => !isNaN(point.x));
 
 
       }
@@ -125,6 +124,13 @@ export default defineComponent({
 
       //TO DO : HANDLE ALL NaN STUFF
 
+      const proteome_prots = UniprotDatabase.proteome.proteins
+
+      // const protsExcel = store.getters.getColDataByName('Accession', 'string')
+
+      // const keptIdx = protsExcel.map((prot: string, i: number) => {if (proteome_prots.includes(prot)) return i })
+      // console.log("keptIdx", keptIdx); 
+
       const x_list = store.getters.getColDataByName(xAxis, 'number')
       const y_list = store.getters.getColDataByName(yAxis, 'number')
       const points: t.Points[] = x_list.map((e: number, i: number) => ({
@@ -133,7 +139,9 @@ export default defineComponent({
                 d: uniprotData[i]
       }))
       //nanProt.value = points.filter((point: t.Points) => isNaN(point.x)).map((point : t.Points) => point.d.id); 
-      const newPlotData = {xLabel : xAxis, yLabel: yAxis, points : points.filter(point => !(isNaN(point.x)|| isNaN(point.y)))}
+      console.log("points", points.length)
+      console.log("filter no uniprot", points.filter(point => point.d !== undefined))
+      const newPlotData = {xLabel : xAxis, yLabel: yAxis, points : points.filter(point => !(isNaN(point.x)|| isNaN(point.y)) && point.d !== undefined && proteome_prots.includes(point.d.id))}
       plotsData.value.push(newPlotData); 
 
     }
@@ -177,15 +185,17 @@ export default defineComponent({
           .then((values) => {
             console.log("prot data loaded")
             uniprotData = values
-            checkTaxidProtData()
-              .then((taxids_resp: Set<number>) => {
-                taxid.value = Array.from(taxids_resp)[0]
-                uniprotLoaded.value = true
-                console.log(taxid.value); 
-              })
-              .catch((taxids_resp: Set<number>) => {
-                taxidWarning.value = taxids_resp; 
-              })
+            uniprotLoaded.value = true
+            // checkTaxidProtData()
+            //   .then((taxids_resp: Set<number>) => {
+            //     console.log('check taxid of', taxids_resp)
+            //     taxid.value = Array.from(taxids_resp)[0]
+            //     uniprotLoaded.value = true
+            //     console.log(taxid.value); 
+            //   })
+            //   .catch((taxids_resp: Set<number>) => {
+            //     taxidWarning.value = taxids_resp; 
+            //   })
 
             
 
@@ -197,7 +207,7 @@ export default defineComponent({
         
     });
 
-    return {canDraw, draw, availableData, selectable, selected, select, plotData, transformation, uniprotLoaded, uniprotError, volcanoDisabled, volcanoDrawed, taxidWarning, taxid, saveSelectedProtId, selectedProts, nanProt, drawNewPlot, plotsData, currentProteome} ;
+    return {canDraw, draw, availableData, selectable, selected, select, plotData, transformation, uniprotLoaded, uniprotError, volcanoDisabled, volcanoDrawed, saveSelectedProtId, selectedProts, nanProt, drawNewPlot, plotsData, currentProteome} ;
   }
 
 

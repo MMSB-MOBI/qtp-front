@@ -1,6 +1,7 @@
 import { csvParse } from "d3";
 import { resolveComponent } from "vue";
 import { UnigoGOObject, GOData } from '../types/volcano'
+import { Proteome } from '../types/data'; 
 
 interface UniprotDatum {
     name?: string;
@@ -12,21 +13,30 @@ interface UniprotDatum {
     taxid?: string; 
 }
 
-type UniprotFetch = { [index: string]: UniprotDatum }; 
-type UnigoFetch = { [index: string]: UnigoGOObject[]}
+interface UniprotFetch {
+    found : { [index: string]: UniprotDatum }, 
+    not_found : {contaminants : number, not_in_uniprot : string[], unformatted : string[]}
+}
+
+interface UnigoFetch {
+    found : { [index: string]: UnigoGOObject[] }, 
+    not_found : {contaminants : number, not_in_uniprot : string[], unformatted : string[]}
+}
+
 class UniprotStorage {
     data: UniprotFetch;
-    proteome: string; 
+    proteome: Proteome; 
     providerURL: string|undefined
 
     constructor(url?: string){
-        this.data = {}
-        this.proteome = ''
+        this.data = {found: {}, not_found : {contaminants : 0, not_in_uniprot: [], unformatted : []}}
+        this.proteome = {name : '', proteins: []}
         this.providerURL = url
     }
 
     private fetchFromUniprot = async (uniprotIDs: string[]): Promise<UniprotFetch> => {
         //console.log(`ff Loading ${uniprotIDs.length} items ff`);
+        console.log("try to fetch from uniprot", uniprotIDs.length)
         const response = await fetch(`${this.providerURL ? this.providerURL : ''}/api/uniprot/many`, {
             method: 'POST',
             headers: {
@@ -63,7 +73,7 @@ class UniprotStorage {
     private checkTaxids = async(uniprotData: UniprotFetch): Promise<Set<number>> => {
         return new Promise((resolve, reject) => {
             const setTaxid: Set<number> = new Set();
-            Object.values(uniprotData).forEach(prot => {
+            Object.values(uniprotData.found).forEach(prot => {
                 if(prot !== null)  setTaxid.add(Number(prot.taxid))
             })
             if (setTaxid.size === 1) resolve(setTaxid)
@@ -72,18 +82,17 @@ class UniprotStorage {
     }
 
     public add = async (uniprotIDs : string[]): Promise<boolean> => {
+        console.log("add", uniprotIDs.length)
         const uniprotData = await this.fetchFromUniprot(uniprotIDs); 
-        const withAnnotationData : UnigoFetch = {}
+        const withAnnotationData : UnigoFetch = {found : {}, not_found : uniprotData.not_found}
         return new Promise((res,rej) => {
-            this.checkTaxids(uniprotData).then(taxid => {
-                const finalTaxid = taxid.values().next().value
                 try {
                     //This is dumb but I'm lazy for now
-                    Object.values(uniprotData).forEach(prot => {
+                Object.values(uniprotData.found).forEach(prot => {
                        
                         if(prot !== null) {
                             //@ts-ignore
-                            withAnnotationData[prot.id] = prot
+                        withAnnotationData.found[prot.id] = prot
                             prot.unigoGO = []
                             prot.go.forEach(goObj => {
                                 const test : UnigoGOObject = {ns : getNamespace(goObj.term), go : goObj.id, name : goObj.term}
@@ -108,14 +117,14 @@ class UniprotStorage {
                 //    this.data = {  ...this.data, ...uniprotData }
                 //    res(true); 
                 // }).catch(err => rej({"fetch unigo error": err}))
-            }).catch(taxids_err => rej({"taxid error": taxids_err}))
         })
     }
 
     public get = async(id : string): Promise<any> => {
         return new Promise((res, rej) => {
             try{
-                const result = this.data[id]
+                console.log("get", id)
+                const result = this.data.found[id]
                 res(result)
             }
             catch(err){
@@ -125,10 +134,10 @@ class UniprotStorage {
         })
     }
 
-    public registerProteome = async(name : string) : Promise<boolean> => {
+    public registerProteome = async(proteome : Proteome) : Promise<boolean> => {
         return new Promise((res,rej) => { 
             try {
-                this.proteome = name
+                this.proteome = proteome
             }
             catch(e){
                 rej(e)
@@ -141,8 +150,14 @@ class UniprotStorage {
     }
 
     public getAll = async(): Promise<string[]> => {
-        return Object.keys(this.data)
+        return Object.keys(this.data.found)
     }
+
+    public getUniprotNotFound = async() => {
+        return this.data.not_found
+    }
+
+
 
     /*public getGO = async(filterFn:(go: GOObject2) => Boolean): Promise<any> => {
         console.log("getGO"); 
@@ -150,6 +165,8 @@ class UniprotStorage {
         const filtered = this.unigo_data.filter(go => filterFn(go))
         return filtered; 
     }*/
+
+
 
 }
 

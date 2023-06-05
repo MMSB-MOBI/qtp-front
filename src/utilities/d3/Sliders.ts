@@ -21,7 +21,7 @@ export class Sliders {
     bottomOffset: number;
     activeArea: ActiveCorners;  
     public get xLimits(): number[] {
-        return this.specsBot.handlers.map((g)=>{
+        return this.specsBot.handlers.map((g)=> {
             const _ = g.attr('transform');
             ////console.log(`xAxis G ${_}`);
             const t = trCoordinates(g);

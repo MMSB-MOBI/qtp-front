@@ -13,12 +13,12 @@
     </template>
     
     </Listbox>
-    <!--<Button class="p-button-outlined w-full mt-3" @click="downloadProteins">
+    <Button class="p-button-outlined w-full mt-3" @click="downloadProteins">
       <div class="flex-auto space-x-1">
         <i class="pi pi-download" />
         <span> Download proteins list </span>
       </div>
-    </Button>-->
+    </Button>
   </div>
 </template>
 
@@ -56,7 +56,7 @@ export default defineComponent({
 
     //METHODS
     const clickProt = (prot_id: string) => {
-      console.log("click prot")
+      //console.log("click prot")
       emit("click-on-prot", selectedProt.value.map(p => p.id));
     };
 

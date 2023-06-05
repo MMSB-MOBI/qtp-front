@@ -6,7 +6,7 @@
     <DragAndDrop
       class="p-3 w-9/10"
       @xml-load="loadDroppedFile"
-      @xls-drop="xlsDropped = true"
+      @xls-drop="onDrop"
     />
     <!--<InputFile/>-->
     <Button
@@ -25,12 +25,13 @@
       :options="proteomes"
       optionLabel="name"
       placeholder="Select your reference proteome"
+      @change="onChangeProteome()"
     >
     </Dropdown>
 
     <span v-if="selectedProteome.name">
       {{ selectedProteome.name }} contains
-      {{ selectedProteome.protein_number }} of your proteins
+      {{ selectedProteome.proteins.length }} of your proteins
     </span>
   </div>
 
@@ -54,7 +55,13 @@
       <div class="font-semibold mb-2" v-for="sTitle in headers" :key="sTitle">
         {{ sTitle }}
       </div>
-      <p>{{ jsonData.length }} total proteins ({{selectedProteome.protein_number}} in {{selectedProteome.name}} proteome)</p>
+      <p>{{ jsonData.length }} total proteins : {{selectedProteome.proteins.length}} in {{selectedProteome.name}} proteome, 
+        {{proteomes.filter(proteome => proteome.name !== selectedProteome.name && proteome.proteins.length > 0).reduce((sum, proteome) => sum + proteome.proteins.length, 0)}} in other proteomes 
+        ({{proteomes.filter(proteome => proteome.name !== selectedProteome.name && proteome.proteins.length > 0).map(proteome => proteome.name).join(', ')}})
+        <span v-if="notFoundProts.contaminants > 0">, {{notFoundProts.contaminants}} contaminants </span> 
+        <span v-if="notFoundProts.unformatted.length > 0">, {{ notFoundProts.unformatted.length }} are not uniprot accessions </span>
+        <span v-if="notFoundProts.not_in_uniprot.length > 0">, {{notFoundProts.not_in_uniprot.length}} not found in local uniprot </span>
+        </p>
       <p>{{ selectedColumns.length }} selected columns</p>
     </div>
 
@@ -129,6 +136,7 @@ import Dropdown from "primevue/dropdown";
 import { FilterMatchMode } from "primevue/api";
 import XLSX from "xlsx";
 import { useStore } from "vuex";
+import { Proteome, UniprotFetchNotFound } from '../types/data'; 
 
 import { logDB } from "../utilities/uniprot-storage";
 const UniprotDatabase = logDB();
@@ -138,11 +146,6 @@ interface ColTemplate {
   field: string;
   header: string;
   idx: number;
-}
-
-interface Proteome {
-  name: string;
-  protein_number: number;
 }
 
 export default defineComponent({
@@ -172,8 +175,10 @@ export default defineComponent({
     const proteomes: Ref<Proteome[]> = ref([]);
     const selectedProteome: Ref<Proteome> = ref({
       name: "",
-      protein_number: 0,
+      proteins: [],
     });
+
+    const notFoundProts : Ref<UniprotFetchNotFound> = ref({contaminants : 0, not_in_uniprot : [], unformatted : []})
 
     const filters = ref({
       global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -186,10 +191,14 @@ export default defineComponent({
     });
 
     const loadDroppedFile = async (dropData: any) => {
+      selectedProteome.value = {name: '', proteins : []}; 
+      console.log("load dropped file")
       store.commit("states/mutateXlsDisplayed", false);
       xlsDropped.value = true;
       uniprotDBFilled.value = false;
       loaded.value = false;
+      canShowTable.value = false; 
+      
 
       await storeData(dropData);
 
@@ -200,8 +209,8 @@ export default defineComponent({
       const proteomesRes = await getProteome(storedIds);
 
       proteomes.value = Object.entries(proteomesRes).map(
-        ([proteomeName, proteinNumber]) => {
-          return { name: proteomeName, protein_number: proteinNumber };
+        ([proteomeName, proteins]) => {
+          return { name: proteomeName, proteins };
         }
       );
     };
@@ -292,12 +301,13 @@ export default defineComponent({
         selectedCols.map((col) => col.idx)
       );
 
-      store.commit("states/mutateXlsDisplayed", true);
+      //store.commit("states/mutateXlsDisplayed", true);
     };
 
     const getProteome = async (
       uniprotIDs: string[]
-    ): Promise<{ [proteome_name: string]: number }> => {
+    ): Promise<{ [proteome_name: string]: string[] }> => {
+      console.log("proteome scan")
       const response = await fetch(`/api/uniprot/proteome_scan`, {
         method: "POST",
         headers: {
@@ -306,15 +316,27 @@ export default defineComponent({
         },
         body: JSON.stringify({ uniprotIDs: uniprotIDs }),
       });
-
       return response.json();
     };
 
     const clickLoadButton = async () => {
       canShowTable.value = true;
-      UniprotDatabase.registerProteome(selectedProteome.value.name);
-      console.log(UniprotDatabase.proteome);
+      UniprotDatabase.registerProteome(selectedProteome.value);
+      notFoundProts.value = await UniprotDatabase.getUniprotNotFound()
+      store.commit("states/mutateXlsDisplayed", true);
+
     };
+
+    const onChangeProteome = async () => {
+      store.commit("states/mutateXlsDisplayed", false);
+      canShowTable.value = false; 
+    }
+
+    const onDrop = async() => {
+      store.commit("states/mutateXlsDisplayed", false);
+      selectedProteome.value = {name: '', proteins : []}; 
+      xlsDropped.value = true
+    }
 
     return {
       loadDroppedFile,
@@ -332,6 +354,9 @@ export default defineComponent({
       proteomes,
       selectedProteome,
       clickLoadButton,
+      notFoundProts,
+      onChangeProteome,
+      onDrop
     };
   },
 });
