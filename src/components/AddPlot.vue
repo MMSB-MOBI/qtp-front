@@ -36,7 +36,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, Ref, PropType, watch, toRefs, computed, ComputedRef, reactive } from "vue";
+import { defineComponent, ref, Ref, PropType, toRefs, computed, ComputedRef, reactive } from "vue";
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
@@ -69,7 +69,7 @@ export default defineComponent ({
             default : []
         }
     }, 
-    setup(props, {emit}){
+    setup(props : any, {emit}){
         const displayDialog = ref(false); 
         const selectedAxis = reactive({
             x : {'name': '', optionDisabled: false} ,

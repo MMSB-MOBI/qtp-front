@@ -103,7 +103,6 @@ class UniprotStorage {
                    })
                     //@ts-ignore
                     this.data = withAnnotationData
-                    console.log("DATA", this.data)
                 } catch(e) {
                     rej(e)
                 }
@@ -123,7 +122,6 @@ class UniprotStorage {
     public get = async(id : string): Promise<any> => {
         return new Promise((res, rej) => {
             try{
-                console.log("get", id)
                 const result = this.data.found[id]
                 res(result)
             }
