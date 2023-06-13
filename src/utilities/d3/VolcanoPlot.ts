@@ -43,6 +43,7 @@ export default class VolcanoPlot {
         */
         //container.attr('class', 'circlesContainer');
     // Create circle foreach line in tsv
+    
         this.points = container.selectAll(".dot")
                 .data(data)
                 .enter().append('circle')

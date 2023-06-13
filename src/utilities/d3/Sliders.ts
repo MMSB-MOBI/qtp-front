@@ -4,6 +4,7 @@ import { trCoordinates } from './utils';
 
 export type axType = 'bottom'| 'right';
 export type axNum  = 1 | 2;
+type axisType = "y" | "x1" | "x2"
 type GSel =  d3.Selection<SVGGElement, unknown, null, undefined>;
 
 export interface SlidersI {
@@ -20,6 +21,7 @@ export class Sliders {
     //plotFrame: PlotFrame;
     bottomOffset: number;
     activeArea: ActiveCorners;  
+
     public get xLimits(): number[] {
         return this.specsBot.handlers.map((g)=> {
             const _ = g.attr('transform');
@@ -42,7 +44,8 @@ export class Sliders {
         this.bottomOffset = bottomOffset;
     }
     private slideFn?: (arg0: Sliders, arg1?: axType, arg2?: axNum) => void;
-    private drawHandler(axis: axType, count: axNum) {
+    private drawHandler(axis: axType, count: axNum, threshold: number[]) {
+        console.log("draw handler", axis)
         const size = 300;
        
         const h = Number.parseInt(d3.select(this.svg).style("height")),
@@ -51,9 +54,10 @@ export class Sliders {
         const yPos = h - this.bottomOffset;
         let slCoor: number, slCoorLow: number|undefined;
         
-        slCoor    = (count == 2 ? 3/4 : 1/2) * (axis == 'bottom' ? w : yPos);
-        slCoorLow = count == 2 ? 1/4 * (axis == 'bottom' ? w : yPos) : undefined;        
-
+        slCoor    = threshold[0]; 
+        console.log("slCoor", slCoor)
+        slCoorLow = count == 2 ? threshold[1] : undefined;        
+        console.log("slCoorLow", slCoorLow)
         const frame = this.activeArea;
         //const sliders: SlidersI = { handlers : [], ghosts : [] };
         const sliders = axis == 'bottom' ? this.specsBot : this.specsRight;
@@ -81,6 +85,7 @@ export class Sliders {
         
 
         for (let i: axNum = 1 ; i <= count ; i++) {
+            console.log("slider pouet pouet");
             const gSlider = generateHandlerG(size, i == 1 ? slCoor : slCoorLow as number);
             gSlider.attr('class', 'handler')
                    .attr('fill', 'gray')
@@ -144,6 +149,8 @@ export class Sliders {
                     event.sourceEvent.stopPropagation();
                     this.currentAxNum = undefined;
                     this.currentAxType = undefined;
+                    
+                    
                 });// Could not fathom the proper types; 
                 
             gSlider.call(D as any);
@@ -163,12 +170,51 @@ export class Sliders {
     }
     
     //https://observablehq.com/@d3/d3v6-migration-guide#event_drag
-    draw(){
-        this.specsBot   = this.drawHandler("bottom", 2);
-        this.specsRight = this.drawHandler("right", 1);
+    draw(yThreshold : number, x1Threshold : number, x2Threshold: number){
+        this.specsBot   = this.drawHandler("bottom", 2, [x1Threshold, x2Threshold]);
+        this.specsRight = this.drawHandler("right", 1, [yThreshold]);
     }
+
+    redrawSlider(axis: axisType, value:number){
+        if(axis === "y") {
+            this.reinitSpecsRight();
+            this.specsRight = this.drawHandler('right', 1, [value])
+            this.currentAxType = 'right'; 
+        }
+
+        if(axis === "x1"){
+            const savex2 = this.xLimits[1]
+            this.reinitSpecsBottom(); 
+            this.specsBot = this.drawHandler('bottom', 2, [value, savex2])
+            this.currentAxType = "bottom"; 
+            this.currentAxNum = 1
+        }
+
+        if(axis === "x2"){
+            const savex1 = this.xLimits[0]
+            this.reinitSpecsBottom(); 
+            this.specsBot = this.drawHandler('bottom', 2, [savex1, value])
+            this.currentAxType = "bottom"; 
+            this.currentAxNum = 2
+        }
+    }
+
+    reinitSpecsRight(){
+        this.specsRight.handlers.forEach(handler => handler.remove())
+        this.specsRight = { handlers : [], ghosts : [] };
+    }
+
+    reinitSpecsBottom(){
+        console.log(this.specsBot.handlers)
+        this.specsBot.handlers.forEach(handler => handler.remove())
+        this.specsBot = { handlers : [], ghosts : [] };
+        console.log(this.specsBot.handlers)
+    }
+
     public onSlide(callback: (arg0: Sliders, arg1?: axType, arg2?: axNum) => void){
        this.slideFn = callback;
     }
+
+
         
 }

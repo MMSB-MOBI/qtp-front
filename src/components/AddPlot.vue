@@ -79,7 +79,7 @@ export default defineComponent ({
         const selectedY: Ref<OptionType> = ref({'name': '', optionDisabled: false})
         const data = toRefs(props).data
         const selectionLists: ComputedRef<AxisSelectionListInterface> = computed(() => {
-            const dataFormat: OptionType[] = data.value.map(val => ({name : val.name, optionDisabled: false}))
+            const dataFormat: OptionType[] = data.value.map((val:any) => ({name : val.name, optionDisabled: false}))
             return { 'x' : dataFormat, 'y' : copyArrayOfObjects(dataFormat) as OptionType[]}
         });
         //const testY = computed(() => {return copyArrayOfObjects(testX.value)})

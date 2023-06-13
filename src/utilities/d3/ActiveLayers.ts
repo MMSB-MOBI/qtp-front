@@ -70,7 +70,26 @@ export default class ActiveLayers {
 
         return sel;
     }
+
+    resize2(sliderUI: Sliders){
+        console.log("resize")
+        this.recPool.each(function(d) { 
+            const x  = Number.parseInt( d3.select(this).attr('x') );
+            const y  = Number.parseInt( d3.select(this).attr('y') );
+            const x2 = Number.parseInt( d3.select(this).attr('x2') );
+            const y2 = Number.parseInt( d3.select(this).attr('y2') );
+            console.log(`Current layer ${x},${y}:${x2},${y2}`);
+            console.log(d3.select(this).attr('visibility'))
+            const xLimSl = sliderUI.xLimits;
+            const yLimSl = sliderUI.yLimits;
+            console.log("xlim", xLimSl)
+            console.log("ylim", yLimSl)
+            console.log("axType", sliderUI.currentAxType)
+        })   
+    }
+
     resize(sliderUI: Sliders){
+        //console.log("resize")
         if(! this.activeArea)
             throw('Missing a plot corners to resize active layer');
             const frame: ActiveCorners = this.activeArea;
@@ -92,10 +111,10 @@ export default class ActiveLayers {
             const y  = Number.parseInt( d3.select(this).attr('y') );
             const x2 = Number.parseInt( d3.select(this).attr('x2') );
             const y2 = Number.parseInt( d3.select(this).attr('y2') );
-            //console.log(`Current layer ${x},${y}:${x2},${y2}`);      
-            //console.log(`---${sliderUI.currentAxType}`);
-            //console.log(`xlimSl ${xLimSl}`);
-            //console.dir(`ylimSl ${yLimSl}`);
+            // console.log(`Current layer ${x},${y}:${x2},${y2}`);      
+            // console.log(`---${sliderUI.currentAxType}`);
+            // console.dir(`xlimSl ${xLimSl}`);
+            // console.dir(`ylimSl ${yLimSl}`);
             
             // Y slider changing everyone is affected
             if(sliderUI.currentAxType == 'right') {

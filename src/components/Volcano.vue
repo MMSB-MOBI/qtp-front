@@ -2,6 +2,9 @@
     <div class="root">
         <div v-if="!error" class="flex gap-10">
             <!-- plot part -->
+
+            
+
             <div>
                 <div>
                     <b>{{ allPoints.length }} proteins </b> have been found with annotation in local database.
@@ -12,19 +15,64 @@
                     <button class="tablinks" :class="{ active: transformy === '-log10' }" @click="transformy = '-log10'"> - Log10 transformation </button>
                     <button class="tablinks" :class="{ active: transformy === 'log10' }" @click="transformy = 'log10'"> Log10 transformation </button>
                 </div>
+
+                
+
                 
                 <!-- d3 volcano -->
                 <div>
                     <svg ref="svgRoot"/>
                 </div>
 
+
+
                 <!-- legend -->
+                <!-- <div class="flex gap-1">
+                    <InputNumber style="width: 5rem" v-model="pvalue" :minFractionDigits="2" :min="0" :max="1" :step="0.05" showButtons buttonLayout="vertical"/> 
+                    <Button label="Go" @click="clickPvalue" />
+                    <InputNumber style="width: 5rem" v-model="pvalue" :minFractionDigits="2" :min="0" :max="1" :step="0.05" showButtons buttonLayout="vertical"/> 
+                    <Button label="Go" @click="clickPvalue" />
+                    <InputNumber style="width: 5rem" v-model="pvalue" :minFractionDigits="2" :min="0" :max="1" :step="0.05" showButtons buttonLayout="vertical"/> 
+                    <Button label="Go" @click="clickPvalue" />
+                </div> -->
+
+                 
+
+
+                    <!-- <InputNumber v-model="ratio1" :minFractionDigits="2" showButtons :min="0" :max="1" :step="0.05"/> <Button label="Go" @click="clickPvalue" />
+                    <InputNumber v-model="ratio2" :minFractionDigits="2" showButtons :min="0" :max="1" :step="0.05"/> <Button label="Go" @click="clickPvalue" /> -->
+
                 <div class="flex w-full gap-3 p-3" v-if="volcanoDrawed">
                     <div class="bg-pannelSelection border border-black w-1/6"/>
                     <div class="flex-grow w-5/6">
                         <span> Selected area </span>
                     </div>
                 </div>
+
+                <div class="threshold_container">
+                        <span>p-Value threshold :</span>
+                        <div class="flex gap-1" style="height: 2rem">
+                            <InputNumber v-model="pvalue" :minFractionDigits="2" :min="0" :max="1" :step="0.05" showButtons/> <Button label="Apply " @click="clickPvalue"/>
+                        </div>
+                        
+                </div>
+
+                <div class="flex gap-2">
+                   
+                    <div class="threshold_container">
+                        <span> Abundance ratio lower threshold: </span>
+                        <div class="flex gap-1" style="height: 2rem">
+                            <InputNumber v-model="ratio_lower" :minFractionDigits="2" showButtons :max="ratio_higher"/> <Button label="Apply " @click="clickLowerRatio"/>
+                        </div>
+                    </div>
+                     <div class="threshold_container">
+                        <span> Abundance ratio higher threshold: </span>
+                        <div class="flex gap-1" style="height: 2rem">
+                            <InputNumber v-model="ratio_higher" :minFractionDigits="2" showButtons :min="ratio_lower"/> <Button label="Apply " @click="clickHigherRatio"/>
+                        </div>
+                    </div>
+                </div>    
+
             </div>
 
             <!--filtered prot and go part -->
@@ -52,7 +100,6 @@
                 </div>                
             </div>
 
-            image.png
 
         </div>
         <Error v-if="error" message="Error with volcano plot>"/>
@@ -80,11 +127,13 @@ import GoList from '@/components/GoList.vue'
 import PathwayStats from '@/components/PathwayStats.vue'
 import Button from 'primevue/button'
 import { logDB } from '@/utilities/uniprot-storage';
+import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 
 const UniprotDatabase = logDB(); 
 
 export default defineComponent({
-    components : { Error, ProteinsList, GoList, Loader, PathwayStats, Button }, 
+    components : { Error, ProteinsList, GoList, Loader, PathwayStats, Button, InputNumber, InputText }, 
 
     props: {
         data: {
@@ -125,11 +174,18 @@ export default defineComponent({
         const svgRoot: Ref<SVGSVGElement|null> = ref(null)
         const transformy: Ref<transform> = ref("none"); 
         const volcano: Ref<VolcanoPlot|null> = ref(null); //Save the volcano object
+        const sliders : Ref<Sliders|null> = ref(null)
+        const axis : Ref<Axis|null> = ref(null)
+        const layer: Ref<ActiveLayers|null> = ref(null)
         const volcanoDrawed = ref(false); 
         const filteredByPannelPoints: Ref<Points[]> = ref([])
         const goSelected : Ref<GOObject[]> = ref([])
         const goLoaded = ref(false); 
         const store = useStore();
+
+        const pvalue = ref(0.05); 
+        const ratio_lower = ref(-1)
+        const ratio_higher = ref(1)
 
         const proteome = computed(() => {
             console.log("proteome get in volcano", UniprotDatabase.proteome)
@@ -163,48 +219,54 @@ export default defineComponent({
 
         const draw = async(data : PlotData) => {
             erase(); 
-            //console.log("draw plot")
-            const layerUI = new ActiveLayers(svgRoot.value as SVGSVGElement);
-            const axis = new Axis(svgRoot.value as SVGSVGElement,
+            console.log("draw plot", transformy.value)
+            layer.value = new ActiveLayers(svgRoot.value as SVGSVGElement);
+            axis.value = new Axis(svgRoot.value as SVGSVGElement,
                                   props.height, props.width,
                                   transformy.value != "none" ? transformy.value : undefined );
-            //console.log(data.xLabel, data.yLabel); 
-            axis.draw(allPoints.value, data.xLabel, data.yLabel);
-            layerUI.activeArea = axis.getActiveCorners();
+            
+         
+            axis.value.draw(allPoints.value, data.xLabel, data.yLabel);
+            
+            layer.value.activeArea = axis.value.getActiveCorners();
             volcano.value = new VolcanoPlot(svgRoot.value as SVGSVGElement,
-                                  axis.xScale,
-                                  axis.yScale,
-                                  axis.frame,
-                                  axis.gX,
-                                  axis.gY);  
+                                  axis.value.xScale,
+                                  axis.value.yScale,
+                                  axis.value.frame,
+                                  axis.value.gX,
+                                  axis.value.gY);  
 
             volcano.value.draw(allPoints.value);
 
-            const sliderUI = new Sliders(svgRoot.value as SVGSVGElement, 
-                                         axis.getActiveCorners(), 
-                                         axis.marginBot.marginOuter);  
+            const yPvalueThres = transformy.value === '-log10' ? -Math.log10(0.05) : transformy.value === 'log10' ? Math.log10(0.05) : 0.05
 
-            sliderUI.draw(); 
-            sliderUI.onSlide(() => {
-                layerUI.resize(sliderUI)
-                
+            sliders.value = new Sliders(svgRoot.value as SVGSVGElement, 
+                                         axis.value.getActiveCorners(), 
+                                         axis.value.marginBot.marginOuter);  
+
+            sliders.value.draw(axis.value.yScale(yPvalueThres), axis.value.xScale(-1), axis.value.xScale(1)); 
+            sliders.value.onSlide(() => {
+                layer.value!.resize(sliders.value!)
             });
 
-            selectAllPannels(sliderUI, layerUI, axis.xScale, axis.yScale);
+            selectAllPannels(sliders.value, layer.value, axis.value.xScale, axis.value.yScale);
 
             volcanoDrawed.value = true
+
             emit('volcano-drawed')
 
-            layerUI.onSelectedLayerClick((x,y) => {
-                console.log("click")
-                const unselectCoords = layerUI.getClickRectCoords(sliderUI, x,y); 
-                const predicate = filterPredicateLayerCoords(unselectCoords, axis.xScale, axis.yScale);
+
+            layer.value.onSelectedLayerClick((x,y) => {
+                console.log("click rect")
+                const unselectCoords = layer.value!.getClickRectCoords(sliders.value!, x,y); 
+                const predicate = filterPredicateLayerCoords(unselectCoords, axis.value!.xScale, axis.value!.yScale);
                 removeFilterPoints(predicate)
             })
 
-            axis.onActiveBackgroundClick( (x, y)=> {
-                const selectCoords = layerUI.toggle(sliderUI, x, y);
-                const predicate = filterPredicateLayerCoords(selectCoords, axis.xScale, axis.yScale)
+            axis.value.onActiveBackgroundClick( (x, y)=> {
+                console.log("click background")
+                const selectCoords = layer.value!.toggle(sliders.value!, x, y);
+                const predicate = filterPredicateLayerCoords(selectCoords, axis.value!.xScale, axis.value!.yScale)
                 addFilterPoints(predicate); 
             
             } );
@@ -238,7 +300,6 @@ export default defineComponent({
         const removeFilterPoints = (predicateFn: (point: Points) => boolean) => {
             const newPoints = filteredByPannelPoints.value.filter(point => !predicateFn(point))
             filterPointsAction(newPoints); 
-            
         }
 
 
@@ -321,6 +382,26 @@ export default defineComponent({
             highlightPoints(filteredPoints.map(p => p.svg))
         }
 
+        const clickPvalue = () => {
+            const pvalue_transform = transformy.value === '-log10' ? -Math.log10(pvalue.value) : transformy.value === 'log10' ? Math.log10(pvalue.value) : pvalue.value
+            console.log("xlimits", sliders.value!.xLimits)
+            console.log("ylimits", sliders.value!.yLimits)
+            sliders.value!.redrawSlider('y', axis.value!.yScale(pvalue_transform))
+            console.log("xlimits after", sliders.value!.xLimits)
+            console.log("ylimits after", sliders.value!.yLimits)
+            layer.value!.resize(sliders.value!)
+        }
+
+        const clickLowerRatio = () => {
+            sliders.value!.redrawSlider('x1', axis.value!.xScale(ratio_lower.value))
+            layer.value!.resize(sliders.value!)
+        }
+
+        const clickHigherRatio = () => {
+            sliders.value!.redrawSlider('x2', axis.value!.xScale(ratio_higher.value))
+            layer.value!.resize(sliders.value!)
+        }
+
 
         //WATCHERS 
         watch( (props.data), async (newData) =>{
@@ -361,7 +442,7 @@ export default defineComponent({
             protToGoWorker.terminate(); 
         })
 
-        return { error, svgRoot, volcanoDrawed, transformy, filteredByPannelPoints, goSelected, goLoaded, statsComputed, goDisabled, goPartWidth, disableGO, allPoints, withAnnotationPoints, triggerStatsRefresh, data, highlightFromProt, highlightFromGo, proteome }
+        return { error, svgRoot, volcanoDrawed, transformy, filteredByPannelPoints, goSelected, goLoaded, statsComputed, goDisabled, goPartWidth, disableGO, allPoints, withAnnotationPoints, triggerStatsRefresh, data, highlightFromProt, highlightFromGo, proteome, pvalue, clickPvalue, ratio_lower, ratio_higher, clickLowerRatio, clickHigherRatio }
     }
 
 })
@@ -405,6 +486,9 @@ export default defineComponent({
     opacity:0.7;  
 }
 
-
+.threshold_container {
+    display: flex;
+    flex-direction: column; 
+}
 
 </style>
