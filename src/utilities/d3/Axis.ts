@@ -95,6 +95,8 @@ export class Axis implements PlotFrame{
     frame: d3.Selection<SVGGElement, unknown, null, undefined>;
     public xScale: d3.ScaleLinear<number, number> = d3.scaleLinear();
     public yScale: d3.ScaleLinear<number, number> = d3.scaleLinear();
+    public xScaleInverted : d3.ScaleLinear<number, number> = d3.scaleLinear(); 
+    public yScaleInverted : d3.ScaleLinear<number, number> = d3.scaleLinear(); 
     gX?:    GSel;
     gY?:    GSel;
     optYtransform?: transform;
@@ -299,20 +301,35 @@ export class Axis implements PlotFrame{
         //console.log(`Setting xScale ${min}:${max} -> ${frame.x1}:${frame.x2}`);
         //console.dir(this.marginLeft);
         //console.dir(frame);
-        if(min != undefined && max != undefined)
+        if(min != undefined && max != undefined){
             this.xScale.range([frame.x1, frame.x2])
                 .domain([min, max])
                 .nice();
+            this.xScaleInverted.range([min, max])
+                .domain([frame.x1, frame.x2])
+                .nice()
+        }
+            
+        
         else 
             console.error("Undefined value in x Range");
 
         const [_min, _max] = d3.extent(data, (d) =>  d.y);
-        if ( _min != undefined && _max != undefined)
+        if ( _min != undefined && _max != undefined) {
             this.yScale.range(flip 
-                                ? [frame.y1, frame.y2]
-                                : [frame.y2, frame.y1])
+                ? [frame.y1, frame.y2]
+                : [frame.y2, frame.y1])
                 .domain([_min, _max])
                 .nice();
+            this.yScaleInverted.range([_min, _max])
+                .domain(flip 
+                    ? [frame.y1, frame.y2]
+                    : [frame.y2, frame.y1])
+                .nice()
+        }
+            
+            
+            
         else
             console.error("Undefined value in y Range");
 

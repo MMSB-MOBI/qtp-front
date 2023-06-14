@@ -249,6 +249,23 @@ export default defineComponent({
                 layer.value!.resize(sliders.value!)
             });
 
+            sliders.value.onSlideEnd(() => {
+                filterPointsFromSelection(); 
+                // const _pvalue = transformy.value === "-log10" 
+                //     ? Math.pow(10, -sliders.value?.yLimits[0]!)
+                //     : transformy.value === "log10" 
+                //     ? Math.pow(10, sliders.value?.yLimits[0]!)
+                //     : sliders.value?.yLimits[0]
+
+                // const higher_ratio = sliders.value?.xLimits[0]
+                // const lower_ratio = sliders.value?.xLimits[1]
+
+                // ratio_higher.value = axis.value!.xScaleInverted(higher_ratio!)
+                // ratio_lower.value = axis.value!.xScaleInverted(lower_ratio!)
+                // pvalue.value = _pvalue!
+                
+            })
+
             selectAllPannels(sliders.value, layer.value, axis.value.xScale, axis.value.yScale);
 
             volcanoDrawed.value = true
@@ -259,15 +276,13 @@ export default defineComponent({
             layer.value.onSelectedLayerClick((x,y) => {
                 console.log("click rect")
                 const unselectCoords = layer.value!.getClickRectCoords(sliders.value!, x,y); 
-                const predicate = filterPredicateLayerCoords(unselectCoords, axis.value!.xScale, axis.value!.yScale);
-                removeFilterPoints(predicate)
+                filterPointsFromSelection()
             })
 
             axis.value.onActiveBackgroundClick( (x, y)=> {
                 console.log("click background")
                 const selectCoords = layer.value!.toggle(sliders.value!, x, y);
-                const predicate = filterPredicateLayerCoords(selectCoords, axis.value!.xScale, axis.value!.yScale)
-                addFilterPoints(predicate); 
+                filterPointsFromSelection()
             
             } );
 
@@ -390,16 +405,39 @@ export default defineComponent({
             console.log("xlimits after", sliders.value!.xLimits)
             console.log("ylimits after", sliders.value!.yLimits)
             layer.value!.resize(sliders.value!)
+            filterPointsFromSelection()
+            
+            //selectAllPannels(sliders.value!, layer.value!, axis.value!.xScale, axis.value!.yScale);
+            
         }
 
         const clickLowerRatio = () => {
             sliders.value!.redrawSlider('x1', axis.value!.xScale(ratio_lower.value))
             layer.value!.resize(sliders.value!)
+            filterPointsFromSelection()
         }
 
         const clickHigherRatio = () => {
             sliders.value!.redrawSlider('x2', axis.value!.xScale(ratio_higher.value))
             layer.value!.resize(sliders.value!)
+            filterPointsFromSelection()
+        }
+
+        const filterPointsFromSelection = () => {
+            filteredByPannelPoints.value = []
+            const selected_rect = layer.value!.getSelectedRecCoords()
+            const unselected_rect = layer.value!.getUnselectedRecCoords()
+
+            unselected_rect.forEach(rect_coords => { 
+                const predicate = filterPredicateLayerCoords(rect_coords, axis.value!.xScale, axis.value!.yScale);
+                removeFilterPoints(predicate)
+            })
+
+            selected_rect.forEach(rect_coords => { 
+                const predicate = filterPredicateLayerCoords(rect_coords, axis.value!.xScale, axis.value!.yScale);
+                addFilterPoints(predicate)
+            })
+
         }
 
 

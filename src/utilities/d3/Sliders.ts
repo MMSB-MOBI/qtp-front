@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { csvParse } from "d3";
 import { ActiveCorners } from "./Axis";
 import { trCoordinates } from './utils';
 
@@ -44,6 +45,7 @@ export class Sliders {
         this.bottomOffset = bottomOffset;
     }
     private slideFn?: (arg0: Sliders, arg1?: axType, arg2?: axNum) => void;
+    private slideEndFn? : (arg0: Sliders) => void; 
     private drawHandler(axis: axType, count: axNum, threshold: number[]) {
         console.log("draw handler", axis)
         const size = 300;
@@ -54,9 +56,9 @@ export class Sliders {
         const yPos = h - this.bottomOffset;
         let slCoor: number, slCoorLow: number|undefined;
         
-        slCoor    = threshold[0]; 
+        slCoor    = count == 2 ? threshold[1] : threshold[0]; 
         console.log("slCoor", slCoor)
-        slCoorLow = count == 2 ? threshold[1] : undefined;        
+        slCoorLow = count == 2 ? threshold[0] : undefined;    
         console.log("slCoorLow", slCoorLow)
         const frame = this.activeArea;
         //const sliders: SlidersI = { handlers : [], ghosts : [] };
@@ -85,7 +87,6 @@ export class Sliders {
         
 
         for (let i: axNum = 1 ; i <= count ; i++) {
-            console.log("slider pouet pouet");
             const gSlider = generateHandlerG(size, i == 1 ? slCoor : slCoorLow as number);
             gSlider.attr('class', 'handler')
                    .attr('fill', 'gray')
@@ -149,6 +150,8 @@ export class Sliders {
                     event.sourceEvent.stopPropagation();
                     this.currentAxNum = undefined;
                     this.currentAxType = undefined;
+                    if(this.slideEndFn) this.slideEndFn(this)
+
                     
                     
                 });// Could not fathom the proper types; 
@@ -183,19 +186,19 @@ export class Sliders {
         }
 
         if(axis === "x1"){
-            const savex2 = this.xLimits[1]
+            const savex2 = this.xLimits[0]
             this.reinitSpecsBottom(); 
             this.specsBot = this.drawHandler('bottom', 2, [value, savex2])
             this.currentAxType = "bottom"; 
-            this.currentAxNum = 1
+            this.currentAxNum = 2
         }
 
         if(axis === "x2"){
-            const savex1 = this.xLimits[0]
+            const savex1 = this.xLimits[1]
             this.reinitSpecsBottom(); 
             this.specsBot = this.drawHandler('bottom', 2, [savex1, value])
             this.currentAxType = "bottom"; 
-            this.currentAxNum = 2
+            this.currentAxNum = 1
         }
     }
 
@@ -213,6 +216,10 @@ export class Sliders {
 
     public onSlide(callback: (arg0: Sliders, arg1?: axType, arg2?: axNum) => void){
        this.slideFn = callback;
+    }
+
+    public onSlideEnd(callback:() => void){
+        this.slideEndFn = callback
     }
 
 
